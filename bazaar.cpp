@@ -13,15 +13,84 @@
 
 
 // The 'makePeer' function.  This will be the basis of all future p
-int makePeer(struct peer){
+int makePeer(struct peer peerDesc){
     // This function takes the passed in struct, and using it creates a peer.  It creates the socket,
     // binds the port to it, stocks the items that it has to sell, and then follows the behavior that's
     // specified.
 
+    // Initial variable declaration
+    int peer_fd, valread;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    char buffer[1024] = {0};
+
+    // Creates the initial socket file descriptor
+    if ((peer_fd = socker(AF_INET, SOCK_STREAM, 0)) == 0){
+        perror("Socket Creation Failure!");
+        exit(EXIT_FAILURE);
+    }
+    // Surgically prepare for port attachment
+    if( setsockopt( peer_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt) )){
+        perror("setsockopt Failure!");
+        exit(EXIT_FAILURE);
+    }
+    // Modify address for port attachment
+	address.sin_family = AF_INET; 
+	address.sin_addr.s_addr = INADDR_ANY; 
+	address.sin_port = htons(peerDesc.port);
+    // ATTACH THE PORT!
+    if( bind( peer_fd, (struct sockaddr *)&address, sizeof(address) ) < 0 ){
+        perror("Port Bind Failure!");
+        exit(EXIT_FAILURE);
+    }
+
+    // We should now have a basic socket.  Test code...
+    if( peerDesc.behavior == BEHAVE_TEST_X1 ){
+
+        int x2 = 0;
+        // Prepare neighbor address
+        struct sockaddr_in testx2_addr;
+        testx2_addr.sin_family = AF_INET;
+        testx2_addr.sin_port = htons(peerDesc.neighborPort);
+        char* x2_hello = "Hello from test x1!";
+
+        // Attempt to connect to neighbor
+        if( connect( x2, (struct sockaddr *)&testx2_addr, sizeof(testx2_addr)) < 0){
+            perror("Connect Failure!");
+            exit(EXIT_FAILURE);
+        }
+
+        send(x2, x2_hello, strlen(x2_hello), 0);
+
+        std::cout << "x2_hello sent\n";
+        return 0;
+
+
+    } else if ( peerDesc.behavior == BEHAVE_TEST_X2 ){
+
+        int x1 = 0;
+        int valRead = 0;
+        char buffer[1024] = {0};
+
+        if( listen(peer_fd, 3) < 0){
+            perror("Listen Failure!");
+            exit(EXIT_FAILURE);
+        }
+
+        if( (x1 = accept(peer_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0 ){
+            perror("Accept Failure!");
+            exit(EXIT_FAILURE);
+        }
+
+        valRead = read( x1, buffer, 1024);
+        printf("%s\n", buffer);
+        printf("x1 hello message recieved\n");
+        return 0;
+    }
+
 
 }
-
-
 
 
 
