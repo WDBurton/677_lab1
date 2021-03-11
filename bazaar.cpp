@@ -26,7 +26,7 @@ int makePeer(struct peer peerDesc){
     char buffer[1024] = {0};
 
     // Creates the initial socket file descriptor
-    if ((peer_fd = socker(AF_INET, SOCK_STREAM, 0)) == 0){
+    if ((peer_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0){
         perror("Socket Creation Failure!");
         exit(EXIT_FAILURE);
     }
@@ -56,12 +56,12 @@ int makePeer(struct peer peerDesc){
         char* x2_hello = "Hello from test x1!";
 
         // Attempt to connect to neighbor
-        if( connect( x2, (struct sockaddr *)&testx2_addr, sizeof(testx2_addr)) < 0){
+        if( connect( peer_fd, (struct sockaddr *)&testx2_addr, sizeof(testx2_addr)) < 0){
             perror("Connect Failure!");
             exit(EXIT_FAILURE);
         }
 
-        send(x2, x2_hello, strlen(x2_hello), 0);
+        send(peer_fd, x2_hello, strlen(x2_hello), 0);
 
         std::cout << "x2_hello sent\n";
         return 0;

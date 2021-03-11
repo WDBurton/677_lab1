@@ -38,16 +38,16 @@ int makePeer(struct peer);
 #define DUCK 2
 
 // Behavior constants
-#define BEHAVE_NULL 0;
-#define BEHAVE_M1_SELL_FISH 1;
-#define BEHAVE_M1_BUY_FISH 2;
-#define BEHAVE_M1_SELL_BOAR 3;
-#define BEHAVE_M1_BUY_BOAR 4;
-#define BEHAVE_M1_SELL_ANY 5;
-#define BEHAVE_M1_BUY_ANY 6;
+#define BEHAVE_NULL 0
+#define BEHAVE_M1_SELL_FISH 1
+#define BEHAVE_M1_BUY_FISH 2
+#define BEHAVE_M1_SELL_BOAR 3
+#define BEHAVE_M1_BUY_BOAR 4
+#define BEHAVE_M1_SELL_ANY 5
+#define BEHAVE_M1_BUY_ANY 6
 
-#define BEHAVE_TEST_X1 100;     // Basic test to send a message
-#define BEHAVE_TEST_X2 101;     // Basic test to recieve a message
+#define BEHAVE_TEST_X1 100     // Basic test to send a message
+#define BEHAVE_TEST_X2 101     // Basic test to recieve a message
 
 
 #endif

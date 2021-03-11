@@ -10,8 +10,16 @@
 //      Randomly assigned buyer/seller roles, items sold forever
 void milestoneOne(){
 
-    std::thread thread1(buyer, 0, 8080, 8081);
-    std::thread thread2(seller, 0, 8081, 8080);
+    struct peer peerDesc;
+    peerDesc.port = 8080;
+    peerDesc.neighborPort = 8081;
+    peerDesc.behavior = BEHAVE_TEST_X1;
+    std::thread thread1(makePeer, peerDesc);
+
+    peerDesc.port = 8081;
+    peerDesc.neighborPort = 8080;
+    peerDesc.behavior = BEHAVE_TEST_X2;
+    std::thread thread2(makePeer, peerDesc);
 
     thread1.join();
     thread2.join();
