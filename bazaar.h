@@ -5,6 +5,8 @@
 
 // The functions in bazaar
 void testMultiCompile();
+int buyer(int peerId, int portNum, int otherPort);
+int seller(int peerId, int portNum, int otherPort);
 
 
 
