@@ -12,6 +12,19 @@
 #include <string.h> 
 
 
+// The 'makePeer' function.  This will be the basis of all future p
+int makePeer(struct peer){
+    // This function takes the passed in struct, and using it creates a peer.  It creates the socket,
+    // binds the port to it, stocks the items that it has to sell, and then follows the behavior that's
+    // specified.
+
+
+}
+
+
+
+
+
 // This is the code for a buyer
 int buyer(int peerId, int portNum, int otherPort){
     // The buyer function creates the socket, binds it to the given port number, and then stands by for testing.

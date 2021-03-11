@@ -20,6 +20,7 @@ struct peer{
 void testMultiCompile();
 int buyer(int peerId, int portNum, int otherPort);
 int seller(int peerId, int portNum, int otherPort);
+int makePeer(struct peer);
 
 
 
