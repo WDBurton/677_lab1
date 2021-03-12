@@ -167,7 +167,10 @@ int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct
         toSend.message.sellerFound.prevHops[i] = seekerMessage.message.sellerSeek.prevHops[i];
     }
 
-    // Now that we have the message, it's time to send it out.
+    // Now that we have the message, it's time to send it out.  We need to make the address.
+    struct sockaddr_in neighbor;
+    neighbor.sin_family = AF_INET;
+    neighbor.sin_port = htons(peerDesc.neighborPort);  // TODO:  Fix for more than one neighbor.
 }
 // The 'buy'
 // The 'buyAck'
@@ -193,49 +196,45 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSoc
     int adderLen = sizeof(address);
     struct bazaarMessage buyerMessage, sellerMessage;
 
-    // Now we start the loop.
-    //for( int i = 1; i > 0; i ++ ){
 
-        // First, we try to listen.
-        if( listen(peerSocket, 3) < 0 ){
-            perror("Milestone 1, fish test, seller can not listen to buyer!");
-            exit(EXIT_FAILURE);
-        }
+    // Loop start here maybe?
 
-        if(debugAll) std::cout << "Fish seller listened to buyer\n";
+    // First, we try to listen.
+    if( listen(peerSocket, 3) < 0 ){
+        perror("Milestone 1, fish test, seller can not listen to buyer!");
+        exit(EXIT_FAILURE);
+    }
 
-        // Then we accept.
-        if( (buyerSocket = accept( peerSocket, (struct sockaddr *)&address, (socklen_t *)&adderLen) ) < 0 ){
-            perror("Milestone 1, seller can not accept buyer!");
-            exit(EXIT_FAILURE);
-        }
-        
-        if(debugAll) std::cout << "Fish seller accepted buyer\n";
+    if(debugAll) std::cout << "Fish seller listened to buyer\n";
 
-        // Now that we're connected, time to see if we can recieve the message
-        valRead = read( buyerSocket, &buyerMessage, sizeof(buyerMessage) );
+    // Then we accept.
+    if( (buyerSocket = accept( peerSocket, (struct sockaddr *)&address, (socklen_t *)&adderLen) ) < 0 ){
+        perror("Milestone 1, seller can not accept buyer!");
+        exit(EXIT_FAILURE);
+    }
+    
+    if(debugAll) std::cout << "Fish seller accepted buyer\n";
 
-        // Now, we check to ensure that we recieved the right message, and that it's for the right type of
-        // product.
-        if( buyerMessage.type != MESSAGE_SELLER_SEEK || buyerMessage.message.sellerSeek.goodType != FISH ){
-            perror("Milestone 1, incorrect seller seek message recieved!");
-            std::cout << "Mesage type: " << buyerMessage.type << "\n";
-            std::cout << "Good type: " << buyerMessage.message.sellerSeek.goodType << "\n";
-            exit(EXIT_FAILURE);
-        }
-        /*
-        // If we reach here, then we have obtained the correct message.  As such, it's time to return with
-        // one of our own.
-        sellerMessage.type = MESSAGE_SELLER_FOUND;
-        sellerMessage.message.sellerFound.buyerID = buyerMessage.message.sellerSeek.buyerID;
-        sellerMessage.message.sellerFound.hopNum = buyerMessage.message.sellerSeek.hopNum;
-        sellerMessage.message.sellerFound.prevHops[0] = buyerMessage.message.sellerSeek.prevHops[0];
-            // The line above will need to be adjusted for later iterations of this
-        sellerMessage.message.sellerFound.sellerID = peerDesc.ID;*/
+    // Now that we're connected, time to see if we can recieve the message
+    valRead = read( buyerSocket, &buyerMessage, sizeof(buyerMessage) );
 
-        // Now to connect back to the buyer
-        //if( connect( peer))  NOTE: PAUSED HERE
-    //}
+    // Now, we check to ensure that we recieved the right message, and that it's for the right type of
+    // product.
+    if( buyerMessage.type != MESSAGE_SELLER_SEEK || buyerMessage.message.sellerSeek.goodType != FISH ){
+        perror("Milestone 1, incorrect seller seek message recieved!");
+        std::cout << "Mesage type: " << buyerMessage.type << "\n";
+        std::cout << "Good type: " << buyerMessage.message.sellerSeek.goodType << "\n";
+        exit(EXIT_FAILURE);
+    }
+    
+    // If we reach here, then we have obtained the correct message.  As such, it's time to return with
+    // one of our own.  We create the address, and then send it out.
+    struct sockaddr_in neighbor;
+    neighbor.sin_family = AF_INET;
+    neighbor.sin_addr.s_addr = INADDR_ANY;
+    neighbor.sin_port = htons(peerDesc.neighborPort);
+    
+    //sellerFound(peerDesc, buyerMessage, neighbor);
 
 }
 
@@ -256,35 +255,6 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
     peerDesc.buyType = FISH;
     sellerSeek( peerDesc, address );
 
-
-    /*struct bazaarMessage buyerMessage;
-    buyerMessage.type = MESSAGE_SELLER_SEEK;
-
-    buyerMessage.message.sellerSeek.buyerID = peerDesc.ID;
-    buyerMessage.message.sellerSeek.goodType = FISH;
-    buyerMessage.message.sellerSeek.hopNum = 0;
-    buyerMessage.message.sellerSeek.prevHops[0] = peerDesc.ID;
-
-    // Now, the structure for the neighbor's socket address.  We base it off of address, because a lot of the
-    // details will be the same.
-    struct sockaddr_in neighborAddr = address;
-    neighborAddr.sin_port = htons(peerDesc.neighborPort);
-
-    if(debugAll) std::cout << "Struct created; connecting to seller\n";
-
-    
-    for( int i = 1; i > 0; i ++ ){
-
-        // Now I see if I can connect.
-        if( connect( peerSocket, (struct sockaddr *)&neighborAddr, sizeof(neighborAddr) ) < 0 ){
-            perror("Milestone 1, fish test, buyer can not connect to seller!");
-            exit(EXIT_FAILURE);
-        }
-
-        // Presuming we do, then we're going to send a basic message to the seller!
-        send( peerSocket, &buyerMessage, sizeof(buyerMessage), 0 );
-        if(debugAll) std::cout << "Struct sent to buyer\n";
-    }*/
 
 
 }
