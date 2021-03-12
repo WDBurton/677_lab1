@@ -32,6 +32,9 @@ struct bazaarMessage{
             int hopNum;                         // Used with prevHops to get back to buyer
             int prevHops[10];                   // The previous hop IDs;  Need to edit when figure out/need better method           
         };
+        struct buy{                         // A command to buy 1 of a particular good.
+            int goodType;                       // The good type -- defined with preproccesor constants.
+        };
 
     };
 };
@@ -56,11 +59,22 @@ int makePeer(struct peer);
 #define SELL 1
 #define BOTH 2
 
+
+// The constants that define what type of command is being sent over the network.
+#define BUYER_SEEK 0
+#define BUYER_FOUND 1
+#define BUY 2
+
+
+
 // The constants that determine what type of goods are avaiable for purchase or selling, as well as
 // how many of them there are
 #define FISH 0
 #define BOAR 1
 #define DUCK 2
+
+
+
 
 // Behavior constants
 #define BEHAVE_NULL 0
