@@ -27,12 +27,12 @@ struct bazaarMessage{
             int hopNum;                         // The number of hops allowed.
             int prevHops[10];                   // Past hop IDs; Need to edit when figure out better method.
         } sellerSeek;
-        struct buyerFound{                  // A return to the flood, letting a seller know the buyer has been found
+        struct sellerFound{                  // A return to the flood, letting a seller know the buyer has been found
             int buyerID;                        // The ID of the buyer
             int sellerID;                       // The ID of the seller
             int hopNum;                         // Used with prevHops to get back to buyer
             int prevHops[10];                   // The previous hop IDs;  Need to edit when figure out/need better method           
-        } buyerFound;
+        } sellerFound;
         struct buy{                         // A command to buy 1 of a particular good.
             int goodType;                       // The good type -- defined with preproccesor constants.
         } buy;
