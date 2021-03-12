@@ -93,6 +93,31 @@ int makePeer(struct peer peerDesc){
 }
 
 
+// The milestone one sell fish function
+int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address ){
+    // This operates a socket that will sell fish.  The peer will start by listening for somebody that wants fish;
+    // it will reply with its connection, and then it will proceed to sell fish.  When it is out of fish, it will
+    // then reject the purchase, restock, and repeat.
+
+    // For the purposes of the milestone, it will empty itself five times before finishing itself, and every time
+    // it will print a message.
+
+}
+
+// The milestone one buy fish function
+int mOne_buyFish( strct peer peerDesc, struct sockaddr_in address ){
+    // This operates a socket that will buy fish.  It will start by seeking a neighbor to buy fish from with a
+    // hop length of 1 -- when it gets a reply, it will proceed to buy fish until it gets rejected; at this point,
+    // it will start from the beginning.
+
+    // For the purposes of the milestone, it will buy out the buyer five times before finishing itself, and every
+    // time it will print a message.
+
+}
+
+
+
+
 
 // This is the code for a buyer
 int buyer(int peerId, int portNum, int otherPort){
