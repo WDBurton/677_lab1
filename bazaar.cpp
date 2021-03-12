@@ -171,6 +171,8 @@ int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct
     struct sockaddr_in neighbor;
     neighbor.sin_family = AF_INET;
     neighbor.sin_port = htons(peerDesc.neighborPort);  // TODO:  Fix for more than one neighbor.
+
+    sendMessage( toSend, neighbor );
 }
 // The 'buy'
 // The 'buyAck'
@@ -234,7 +236,9 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSoc
     neighbor.sin_addr.s_addr = INADDR_ANY;
     neighbor.sin_port = htons(peerDesc.neighborPort);
     
-    //sellerFound(peerDesc, buyerMessage, neighbor);
+    // We have obtained sellerSeek!  Now to return with sellerFound!
+    sleep(1);
+    sellerFound(peerDesc, buyerMessage, neighbor);
 
 }
 
@@ -254,6 +258,31 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
     // Now that I have the sellerSeek function, going to attempt to use that.
     peerDesc.buyType = FISH;
     sellerSeek( peerDesc, address );
+
+    // Now we should be recieving a proper sellerFound message.  Time to listen for it.
+    int sellerSocket, valRead;
+    int addrLen = sizeof(address);
+    struct bazaarMessage sellerMessage;
+
+    // Listen, accept, read, check
+    if( listen(peerSocket, 3) < 0 ){
+        perror("Milestone one buy fish listen error!");
+        exit(EXIT_FAILURE);
+    }
+
+    if( (sellerSocket = accept(peerSocket, (struct sockaddr *)&address, (socklen_t *)&addrLen)) < 0 ){
+        perror("Milestone one buy fish accept error!");
+        exit(EXIT_FAILURE);
+    }
+
+    valRead = read(sellerSocket, &sellerMessage, sizeof(sellerMessage));
+
+    if(sellerMessage.type != MESSAGE_SELLER_FOUND ){
+        perror("Milestone one buy fish error; wrong message type");
+        exit(EXIT_FAILURE);
+    }
+
+    if(debugAll) std::cout << "SellerSeek message returned\n";
 
 
 

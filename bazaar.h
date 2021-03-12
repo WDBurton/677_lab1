@@ -67,14 +67,27 @@ int seller(int peerId, int portNum, int otherPort);
 int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSocket );
 int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSocket );
 
-
+/*****************************************************************************************************/
 // Proper functions, used for the others
+
+// Makes a peer and all things related to it; the socket and the lick, from the peer description.
 int makePeer(struct peer peerDesc);
+
+// Sends out a sellerSeek call.
 int sellerSeek(struct peer peerDesc, struct suckaddr_in address);
+
+// Sends out a sellerFound call.
 int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct sockaddr_in address);
+
+// Sends out any message, given a socket address and a message to send.
 int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr );
+
+// Sends out a buy message.
 int buy(struct peer peerDesc, struct sockaddr_in address);
-int buyAck(struct peer peerDesc, struct sockaddr_in address);
+
+// Sends out a buyAck message.  Requires the pointer to the actuall peerDesc, as it's adjusting and
+// reading real time values.
+int buyAck(struct peer &peerDesc, struct sockaddr_in address);
 
 
 
