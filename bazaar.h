@@ -71,7 +71,8 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
 // Proper functions, used for the others
 int makePeer(struct peer peerDesc);
 int sellerSeek(struct peer peerDesc, struct suckaddr_in address);
-int sellerFound(struct peer peerDesc, struct sockaddr_in address);
+int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct sockaddr_in address);
+int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr );
 int buy(struct peer peerDesc, struct sockaddr_in address);
 int buyAck(struct peer peerDesc, struct sockaddr_in address);
 
@@ -112,6 +113,10 @@ int buyAck(struct peer peerDesc, struct sockaddr_in address);
 
 #define BEHAVE_TEST_X1 100     // Basic test to send a message
 #define BEHAVE_TEST_X2 101     // Basic test to recieve a message
+
+
+// Max value constants 
+#define MAX_NEIGHBORS 10
 
 
 

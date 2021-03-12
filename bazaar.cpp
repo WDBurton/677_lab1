@@ -100,6 +100,25 @@ int makePeer(struct peer peerDesc){
 }
 
 
+// The 'sendMessage' function.  Sends out a bazaar message; creates the socket and sends it out.
+int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr ){
+    
+    // Creates the socket
+    int sendSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if( sendSocket < 0 ){
+        perror( "SEND MESSAGE func failed to make socket" );
+        exit(EXIT_FAILURE);
+    }
+    
+    // Now for the connection!
+    if( connect( sendSocket, (struct sockaddr *)&targetAddr, sizeof(targetAddr) ) < 0 ){
+        perror("SEND MESSAGE func failed to connect to neighbor");
+        exit(EXIT_FAILURE);
+    }
+
+    send( sendSocket, &toSend, sizeof(toSend), 0 );
+}
+
 // The 'sellerSeek' function.  Sends out a sellerSeek message.
 int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
     bool thisDebug = false;      // A simple debug variable used in functions that are not working for some reason.
@@ -121,31 +140,47 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
     // TODO: This will be a for loop over all neighbors.
 
     // Now, I need to create an outbound socket, to connect to neighbors.
-
+    /*
     int sendSocket = socket(AF_INET, SOCK_STREAM, 0);
     if( sendSocket < 0 ){
-        perror( "SELLER SEEK func failed to make socket");
+        perror( "SELLER SEEK func failed to make socket" );
         exit(EXIT_FAILURE);
-    }
+    }*/
 
     // Now for the neighbor address
     struct sockaddr_in neighbor;
     neighbor.sin_family = AF_INET;
     neighbor.sin_port = htons(peerDesc.neighborPort);  //TODO: Currently, this relies on there being only one neighbor.  Fix that.
-
+    sendMessage( toSend, neighbor );
+    /*
     // Now for the connection!
     if( connect( sendSocket, (struct sockaddr *)&neighbor, sizeof(neighbor) ) < 0 ){
         perror("SELLER SEEK func failed to connect to neighbor");
         exit(EXIT_FAILURE);
     }
 
-    send( sendSocket, &toSend, sizeof(toSend), 0 );
+    send( sendSocket, &toSend, sizeof(toSend), 0 );*/
 
 
 }
 
 
-// The 'sellerFound'
+// The 'sellerFound' function.  Sends out a sellerFound message.
+int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct sockaddr_in address){
+    // This works similarly to the sellerSeek function.  It's send out from a seller once it's confirmed it has the goods to sell.
+    struct bazaarMessage toSend;
+    toSend.type = MESSAGE_SELLER_FOUND;
+    toSend.message.sellerFound.hopNum = seekerMessage.message.sellerSeek.hopNum;
+    toSend.message.sellerFound.buyerID = seekerMessage.message.sellerSeek.buyerID;
+    toSend.message.sellerFound.sellerID = peerDesc.ID;
+
+    // For the neighbors, I need to copy them over iteratively.
+    for( int i = 0; i < MAX_NEIGHBORS; i++ ){
+        toSend.message.sellerFound.prevHops[i] = seekerMessage.message.sellerSeek.prevHops[i];
+    }
+
+    // Now that we have the message, it's time to send it out.
+}
 // The 'buy'
 // The 'buyAck'
 
@@ -171,7 +206,7 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSoc
     struct bazaarMessage buyerMessage, sellerMessage;
 
     // Now we start the loop.
-    for( int i = 1; i > 0; i ++ ){
+    //for( int i = 1; i > 0; i ++ ){
 
         // First, we try to listen.
         if( listen(peerSocket, 3) < 0 ){
@@ -212,7 +247,7 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSoc
 
         // Now to connect back to the buyer
         //if( connect( peer))  NOTE: PAUSED HERE
-    }
+    //}
 
 }
 
