@@ -1,0 +1,40 @@
+Here is the basic design doc for William David's Burton super-late project, weeeee!
+
+There are two parts to this document; how peers work, and how they send message.
+
+
+PART 1: PEERS
+
+PART 1.1:  PEER CREATION
+
+Peer creation is done in the main function; for each of them, their peerDesc is created, and then spun out makePeer.
+
+PART 1.2:  PEER FUNCTION
+
+Every peer is constantly listening to their socket; upon recieving a message, they spin off a thread to deal with it.
+
+Peers that purchase also have a thread that will occasionally send out a message to find sellers.  If enough time
+passes since a purchase, they will send out another announcement.
+
+
+
+PART 2: MESSAGES
+
+All messages are enclosed in a 'bazaarMessage' wrapper, which holds the message type and a union of all possible messages.
+
+Each of the following messages will have a function that a thread may call to send, or deal with:
+
+SellerSeek
+    The sellerSeek function will flood all neighbors with a message of what they want to buy.  If a peer recieves it, but
+    does not sell the item sought, it will instead flood all of its neighbors, besides the one that sent it.
+    Either way, it will append its ID to relevent portion of the bazaarMessage.
+    If a buyer recieves it, they will instead reply to whatever neighbor sent it with sellerFound
+sellerFound
+    The sellerFound function will either be send to the next peer on the list, using numHops as a way to keep track of which
+    peer in the message it's seeking.  The seller that starts this message will also put in its own ID to the message.
+    This way, it will eventually be sent to the buyer.
+buy
+    The buy function is used to purchase a good from a seller.  Purchases single items only.
+buyAck
+    The buyAck function simply returns either a 'yes you have purchased a good', or a 'no, you have not, stop buying from me'
+    to the buyer, from the seller.
