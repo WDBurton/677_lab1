@@ -45,8 +45,14 @@ int makePeer(struct peer peerDesc){
         exit(EXIT_FAILURE);
     }
 
-    // We should now have a basic socket.  Test code...
-    if( peerDesc.behavior == BEHAVE_TEST_X1 ){
+    // We should now have a basic socket.  Now, we send them off to their appropiate behavior.
+    if( peerDesc.behavior == BEHAVE_M1_BUY_FISH ) {
+        mOne_buyFish(peerDesc, address, peer_fd);
+    }
+    else if ( peerDesc.behavior == BEHAVE_M1_SELL_FISH ){
+        mOne_sellFish(peerDesc, address, peer_fd);
+    }
+    else if( peerDesc.behavior == BEHAVE_TEST_X1 ){
 
         int x2 = 0;
         // Prepare neighbor address
@@ -67,7 +73,8 @@ int makePeer(struct peer peerDesc){
         return 0;
 
 
-    } else if ( peerDesc.behavior == BEHAVE_TEST_X2 ){
+    }
+    else if ( peerDesc.behavior == BEHAVE_TEST_X2 ){
 
         int x1 = 0;
         int valRead = 0;
@@ -94,7 +101,7 @@ int makePeer(struct peer peerDesc){
 
 
 // The milestone one sell fish function
-int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address ){
+int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSocket ){
     // This operates a socket that will sell fish.  The peer will start by listening for somebody that wants fish;
     // it will reply with its connection, and then it will proceed to sell fish.  When it is out of fish, it will
     // then reject the purchase, restock, and repeat.
@@ -102,16 +109,78 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address ){
     // For the purposes of the milestone, it will empty itself five times before finishing itself, and every time
     // it will print a message.
 
+
+    // As this is very well defined, no threads will be used at this moment in time.  Just pinging back and forth
+    // using the message structs.
+
+    // Variable creation; the to-be recieved message, and the empty socket.
+    int buyerSocket, valRead;
+    int adderLen = sizeof(address);
+    struct bazaarMessage buyerMessage;
+
+    // Now we try to listen.
+    if( listen(peerSocket, 3) < 0 ){
+        perror("Milestone 1, fish test, seller can not listen to buyer!");
+        exit(EXIT_FAILURE);
+    }
+
+    if(debugAll) std::cout << "Fish seller listened to buyer\n";
+
+    if( (buyerSocket = accept( peerSocket, (struct sockaddr *)&address, (socklen_t *)&adderLen) ) < 0 ){
+        perror("Milestone 1, seller can not accept buyer!");
+        exit(EXIT_FAILURE);
+    }
+    
+    if(debugAll) std::cout << "Fish seller accepted buyer\n";
+
+    // Now that we're connected, time to see if we can recieve the message
+    valRead = read( buyerSocket, &buyerMessage, sizeof(buyerMessage) );
+
+    // Now, for the test
+    std::cout << "This should be 42: " << buyerMessage.message.sellerSeek.buyerID << "\n";
+
 }
 
 // The milestone one buy fish function
-int mOne_buyFish( strct peer peerDesc, struct sockaddr_in address ){
+int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSocket ){
     // This operates a socket that will buy fish.  It will start by seeking a neighbor to buy fish from with a
     // hop length of 1 -- when it gets a reply, it will proceed to buy fish until it gets rejected; at this point,
     // it will start from the beginning.
 
     // For the purposes of the milestone, it will buy out the buyer five times before finishing itself, and every
     // time it will print a message.
+
+
+    // As we know how this will go, this will not use threads.  For now, the goal is a basic ping, using the message
+    // structs.
+
+    // Basic message for selling.
+    struct bazaarMessage buyerMessage;
+    buyerMessage.type = MESSAGE_SELLER_SEEK;
+
+    buyerMessage.message.sellerSeek.buyerID = peerDesc.ID;
+    buyerMessage.message.sellerSeek.goodType = FISH;
+    buyerMessage.message.sellerSeek.hopNum = 0;
+    buyerMessage.message.sellerSeek.prevHops[0] = peerDesc.ID;
+
+    // Now, the structure for the neighbor's socket address.  We base it off of address, because a lot of the
+    // details will be the same.
+    struct sockaddr_in neighborAddr = address;
+    neighborAddr.sin_port = htons(peerDesc.neighborPort);
+
+    if(debugAll) std::cout << "Struct created; connecting to seller\n";
+
+    // Now I see if I can connect.
+    if( connect( peerSocket, (struct sockaddr *)&neighborAddr, sizeof(neighborAddr) ) < 0 ){
+        perror("Milestone 1, fish test, buyer can not connect to seller!");
+        exit(EXIT_FAILURE);
+    }
+
+    // Presuming we do, then we're going to send a basic message to the seller!
+    send( peerSocket, &buyerMessage, sizeof(buyerMessage), 0 );
+    if(debugAll) std::cout << "Struct sent to buyer\n";
+
+
 
 }
 

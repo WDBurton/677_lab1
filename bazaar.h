@@ -103,4 +103,8 @@ int makePeer(struct peer);
 #define BEHAVE_TEST_X2 101     // Basic test to recieve a message
 
 
+
+// Debug constant; used to let the entire system know to print out what's going on.  For testing purposes.
+#define debugAll true
+
 #endif
