@@ -5,6 +5,7 @@
 // The 'peer' structure, used for constructing the p2p network.
 struct peer{
     int ID;             // The ID of the peer in question
+    int socket;         // The socket fd of the peer
     int type;           // The type of peer, whether buyer, seller, or both
     int port;           // The port of the peer, for binding
     int neighborPort;   // The port of the neighbor, will be replaced when having more than 1 neighbor
@@ -36,7 +37,9 @@ struct bazaarMessage{
         struct buy{                         // A command to buy 1 of a particular good.
             int goodType;                       // The good type -- defined with preproccesor constants.
         } buy;
-
+        struct buyAck{                      // A buyAck, to confirm a purchase.
+            int numBought;                      // The number of a good bought -- 0 means to close connection with this socket
+        } buyAck;
     } message;
 };
 
@@ -62,7 +65,14 @@ int buyer(int peerId, int portNum, int otherPort);
 int seller(int peerId, int portNum, int otherPort);
 int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSocket );
 int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSocket );
-int makePeer(struct peer);
+
+
+// Proper functions, used for the others
+int makePeer(struct peer peerDesc);
+int sellerSeek(struct peer peerDesc, struct suckaddr_in address);
+int sellerFound(struct peer peerDesc, struct sockaddr_in address);
+int buy(struct peer peerDesc, struct sockaddr_in address);
+int buyAck(struct peer peerDesc, struct sockaddr_in address);
 
 
 

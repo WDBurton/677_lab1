@@ -16,6 +16,16 @@ Every peer is constantly listening to their socket; upon recieving a message, th
 Peers that purchase also have a thread that will occasionally send out a message to find sellers.  If enough time
 passes since a purchase, they will send out another announcement.
 
+PART 1.3:   PEER DESC
+
+The peerDesc is a structure that holds all relevant information about a peer.  The data stored includes:
+    The peer's ID
+    The peer's port number
+    The peer's socket file-descriptor
+    The peer's neighbors
+    The number of fish, boar, and duck they have to sell
+    The behavior -- used primarily for testing purposes
+
 
 
 PART 2: MESSAGES
