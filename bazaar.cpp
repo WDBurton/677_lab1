@@ -12,7 +12,7 @@
 #include <string.h> 
 
 
-// The 'makePeer' function.  This will be the basis of all future p
+// The 'makePeer' function.  This will be the basis of all future peers
 int makePeer(struct peer peerDesc){
     // This function takes the passed in struct, and using it creates a peer.  It creates the socket,
     // binds the port to it, stocks the items that it has to sell, and then follows the behavior that's
@@ -100,6 +100,58 @@ int makePeer(struct peer peerDesc){
 }
 
 
+// The 'sellerSeek' function.  Sends out a sellerSeek message.
+int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
+    bool thisDebug = false;      // A simple debug variable used in functions that are not working for some reason.
+
+    // This simply creates a message, and sends it out to all neighbors.
+    // The buyerID and first prevHops are both the peer's ID, with the goodType being what the peer
+    // wants to buy.
+    struct bazaarMessage toSend;
+    toSend.type = MESSAGE_SELLER_SEEK;
+    toSend.message.sellerSeek.buyerID = peerDesc.ID;
+    toSend.message.sellerSeek.goodType = peerDesc.buyType;
+    toSend.message.sellerSeek.hopNum = 1;                       // TODO: Make this a variable that can be assigned at very start.
+    toSend.message.sellerSeek.prevHops[0] = peerDesc.ID;
+
+    if(thisDebug) std::cout << "SellerSeek message type: " << toSend.type
+                            << " | SellerSeek good type: " << toSend.message.sellerSeek.goodType << "\n";
+
+    // Now we need to actually make the connection to all of the neighbors, and send the message out.
+    // TODO: This will be a for loop over all neighbors.
+
+    // Now, I need to create an outbound socket, to connect to neighbors.
+
+    int sendSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if( sendSocket < 0 ){
+        perror( "SELLER SEEK func failed to make socket");
+        exit(EXIT_FAILURE);
+    }
+
+    // Now for the neighbor address
+    struct sockaddr_in neighbor;
+    neighbor.sin_family = AF_INET;
+    neighbor.sin_port = htons(peerDesc.neighborPort);  //TODO: Currently, this relies on there being only one neighbor.  Fix that.
+
+    // Now for the connection!
+    if( connect( sendSocket, (struct sockaddr *)&neighbor, sizeof(neighbor) ) < 0 ){
+        perror("SELLER SEEK func failed to connect to neighbor");
+        exit(EXIT_FAILURE);
+    }
+
+    send( sendSocket, &toSend, sizeof(toSend), 0 );
+
+
+}
+
+
+// The 'sellerFound'
+// The 'buy'
+// The 'buyAck'
+
+
+
+
 // The milestone one sell fish function
 int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSocket ){
     // This operates a socket that will sell fish.  The peer will start by listening for somebody that wants fish;
@@ -142,11 +194,13 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSoc
 
         // Now, we check to ensure that we recieved the right message, and that it's for the right type of
         // product.
-        if( buyerMessage.type != MESSAGE_SELLER_SEEK || buyerMessage.message.sellerSeek.goodType == FISH ){
+        if( buyerMessage.type != MESSAGE_SELLER_SEEK || buyerMessage.message.sellerSeek.goodType != FISH ){
             perror("Milestone 1, incorrect seller seek message recieved!");
+            std::cout << "Mesage type: " << buyerMessage.type << "\n";
+            std::cout << "Good type: " << buyerMessage.message.sellerSeek.goodType << "\n";
             exit(EXIT_FAILURE);
         }
-
+        /*
         // If we reach here, then we have obtained the correct message.  As such, it's time to return with
         // one of our own.
         sellerMessage.type = MESSAGE_SELLER_FOUND;
@@ -154,7 +208,7 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSoc
         sellerMessage.message.sellerFound.hopNum = buyerMessage.message.sellerSeek.hopNum;
         sellerMessage.message.sellerFound.prevHops[0] = buyerMessage.message.sellerSeek.prevHops[0];
             // The line above will need to be adjusted for later iterations of this
-        sellerMessage.message.sellerFound.sellerID = peerDesc.ID;
+        sellerMessage.message.sellerFound.sellerID = peerDesc.ID;*/
 
         // Now to connect back to the buyer
         //if( connect( peer))  NOTE: PAUSED HERE
@@ -175,8 +229,12 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
     // As we know how this will go, this will not use threads.  For now, the goal is a basic ping, using the message
     // structs.
 
-    // Basic message for selling.
-    struct bazaarMessage buyerMessage;
+    // Now that I have the sellerSeek function, going to attempt to use that.
+    peerDesc.buyType = FISH;
+    sellerSeek( peerDesc, address );
+
+
+    /*struct bazaarMessage buyerMessage;
     buyerMessage.type = MESSAGE_SELLER_SEEK;
 
     buyerMessage.message.sellerSeek.buyerID = peerDesc.ID;
@@ -203,7 +261,7 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
         // Presuming we do, then we're going to send a basic message to the seller!
         send( peerSocket, &buyerMessage, sizeof(buyerMessage), 0 );
         if(debugAll) std::cout << "Struct sent to buyer\n";
-    }
+    }*/
 
 
 }

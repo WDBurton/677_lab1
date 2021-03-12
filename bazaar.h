@@ -12,6 +12,7 @@ struct peer{
     int numFish;        // The number of fish available to sell
     int numBoar;        // '             boar                  '
     int numDuck;        // '             duck                  '
+    int buyType;        // The type of good currently wanted for purchase
     int behavior;       // The behavior, if specified, for testing purposes.  Otherwise it will be 0.
 };
 
