@@ -95,7 +95,7 @@ int buy(struct peer peerDesc);
 
 // Sends out a buyAck message.  Requires the pointer to the actuall peerDesc, as it's adjusting and
 // reading real time values.
-int buyAck(struct peer &peerDesc, struct sockaddr_in address);
+int buyAck(struct peer *peerDesc, int goodType);
 
 
 
@@ -111,6 +111,7 @@ int buyAck(struct peer &peerDesc, struct sockaddr_in address);
 #define MESSAGE_SELLER_SEEK 0
 #define MESSAGE_SELLER_FOUND 1
 #define MESSAGE_BUY 2
+#define MESSAGE_BUY_ACK 3
 
 
 

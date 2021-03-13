@@ -160,16 +160,20 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
     // This is basically just a massive switch statement.
     switch( toRespond.type ){
         case MESSAGE_BUY:                   // The case for the buy message
-            std::cout << "TODO: Buy in peerReceive\n";
+            if(thisDebug) std::cout << "Message received: Buy\n";
+            buyAck(peerDesc, toRespond.message.buy.goodType);
+            break;
+        case MESSAGE_BUY_ACK:
+            if(thisDebug) std::cout << "Message received: Buy Ack\n";
             break;
         case MESSAGE_SELLER_FOUND:          // The case for seller found message
-            if(thisDebug) std::cout << "Message found: Seller Found\n";
+            if(thisDebug) std::cout << "Message received: Seller Found\n";
             buy(*peerDesc);
             break;
         case MESSAGE_SELLER_SEEK:           // The case for seller seek message
             // If the peer has a good to sell, then it responds with seller found.
             // Otherwise, it sends the message to all of its neighbors.
-            if (thisDebug) std::cout << "Message found: Seller Seek\n";
+            if (thisDebug) std::cout << "Message received: Seller Seek\n";
             if(
                 toRespond.message.sellerSeek.goodType == FISH && peerDesc->numFish > 0 ||
                 toRespond.message.sellerSeek.goodType == BOAR && peerDesc->numBoar > 0 ||
@@ -182,7 +186,6 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
             }
             break;
     }
-
 }
 
 
@@ -275,7 +278,53 @@ int buy(struct peer peerDesc){
 
 }
 
-// The 'buyAck'
+// The 'buyAck' function.  Gives away a thing!  Currently relies on the fact there's only one neighbor.
+int buyAck(struct peer *peerDesc, int goodType){
+
+    bool buyGood = true;
+    struct bazaarMessage toSend;
+    toSend.type = MESSAGE_BUY_ACK;
+
+    struct sockaddr_in buyer;
+    buyer.sin_port = htons(peerDesc->neighborPort);
+    buyer.sin_family = AF_INET;
+
+    // First off, decriment the type we're selling.
+    switch(goodType){
+        // For each, if we have enough, we decrement; if we don't, then we set 'buyGood' to false, instead.
+        case FISH:
+            if(peerDesc->numFish < 0){
+                buyGood = false;
+                break;
+            }
+            peerDesc->numFish -= 1;
+            break;
+        case BOAR:
+            if(peerDesc->numBoar < 0){
+                buyGood = false;
+                break;
+            }
+            peerDesc->numBoar -= 1;
+            break;
+        case DUCK:
+            if(peerDesc->numDuck < 0){
+                buyGood = false;
+                break;
+            }
+            peerDesc->numDuck -= 1;
+            break;
+    }
+
+    // Check to make sure the purchase went through!
+    if(buyGood){
+        toSend.message.buyAck.numBought = 1;
+    } else{
+        toSend.message.buyAck.numBought = 0;
+    }
+
+    // Send the message!
+    sendMessage( toSend, buyer );
+}
 
 
 
