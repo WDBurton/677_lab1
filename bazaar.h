@@ -116,10 +116,10 @@ void printPeerDesc(struct peer toPrint);
 
 
 // The constants that define what type of command is being sent over the network.
-#define MESSAGE_SELLER_SEEK 0
-#define MESSAGE_SELLER_FOUND 1
-#define MESSAGE_BUY 2
-#define MESSAGE_BUY_ACK 3
+#define MESSAGE_SELLER_SEEK 1
+#define MESSAGE_SELLER_FOUND 2
+#define MESSAGE_BUY 3
+#define MESSAGE_BUY_ACK 4
 
 
 

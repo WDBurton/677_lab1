@@ -177,7 +177,7 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
     bool debugThis = false;
     bool thisDebugMax = false;
     //bool wubba = true;
-    //sleep(1);
+    sleep(1);
     /*if(thisDebugMax) std::cout << "REC: START\n";
     if(thisDebugMax) printPeerDesc(*peerDesc);*/
     if(debugThis){
@@ -211,6 +211,7 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
         case MESSAGE_SELLER_FOUND:          // The case for seller found message
             //if(debugThis) std::cout << "REC:  Message received: Seller Found\n";
             buy(*peerDesc);
+            //sellerSeek(*peerDesc, address);
             break;
         case MESSAGE_SELLER_SEEK:           // The case for seller seek message
             // If the peer has a good to sell, then it responds with seller found.
@@ -253,6 +254,7 @@ int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr ){
     if(debugThisMax) std::cout << "SEND MESSAGE:  Sending message to: " << targetAddr.sin_port << "\n";
 
     targetAddr.sin_family = AF_INET;
+    targetAddr.sin_addr.s_addr = INADDR_ANY;
     int len = sizeof(targetAddr);
     
     // Now for the connection!
@@ -273,7 +275,7 @@ int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr ){
 
 // The 'sellerSeek' function.  Sends out a sellerSeek message.
 int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
-    bool thisDebug = true;      // A simple debug variable used in functions that are not working for some reason.
+    bool thisDebug = false;      // A simple debug variable used in functions that are not working for some reason.
 
     // This simply creates a message, and sends it out to all neighbors.
     // The buyerID and first prevHops are both the peer's ID, with the goodType being what the peer
@@ -293,8 +295,8 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
 
     // Make the neighbor address
     struct sockaddr_in neighbor;
-    neighbor.sin_family = AF_INET;
-	neighbor.sin_addr.s_addr = INADDR_ANY; 
+    //neighbor.sin_family = AF_INET;
+	//neighbor.sin_addr.s_addr = INADDR_ANY; 
     neighbor.sin_port = htons(peerDesc.neighborPort);  //TODO: Currently, this relies on there being only one neighbor.  Fix that.
 
     // Send the message!
@@ -304,7 +306,7 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
 
 // The 'sellerFound' function.  Sends out a sellerFound message.
 int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct sockaddr_in address){
-    bool debugThis = true;
+    //bool debugThis = true;
     // This works similarly to the sellerSeek function.  It's send out from a seller once it's confirmed it has the goods to sell.
     struct bazaarMessage toSend;
     toSend.type = MESSAGE_SELLER_FOUND;
@@ -319,8 +321,8 @@ int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct
 
     // Now that we have the message, it's time to send it out.  We need to make the address.
     struct sockaddr_in neighbor;
-    neighbor.sin_family = AF_INET;
-	address.sin_addr.s_addr = INADDR_ANY;
+    //neighbor.sin_family = AF_INET;
+	//address.sin_addr.s_addr = INADDR_ANY;
     neighbor.sin_port = htons(peerDesc.neighborPort);  // TODO:  Fix for more than one neighbor.
 
     sendMessage( toSend, neighbor );
