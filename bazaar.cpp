@@ -14,7 +14,7 @@
 
 
 // The 'makePeer' function.  This will be the basis of all future peers
-int makePeer(struct peer peerDesc){
+int makePeer(struct peer *peerDesc){
     // This function takes the passed in struct, and using it creates a peer.  It creates the socket,
     // binds the port to it, stocks the items that it has to sell, and then follows the behavior that's
     // specified.
@@ -39,7 +39,7 @@ int makePeer(struct peer peerDesc){
     // Modify address for port attachment
 	address.sin_family = AF_INET; 
 	address.sin_addr.s_addr = INADDR_ANY; 
-	address.sin_port = htons(peerDesc.port);
+	address.sin_port = htons(peerDesc->port);
     // ATTACH THE PORT!
     if( bind( peer_fd, (struct sockaddr *)&address, sizeof(address) ) < 0 ){
         perror("Port Bind Failure!");
@@ -47,22 +47,29 @@ int makePeer(struct peer peerDesc){
     }
 
     // Storing the socket fd in the peerDesc
-    peerDesc.socket = peer_fd;
+    peerDesc->socket = peer_fd;
 
     // We should now have a basic socket.  Now, we send them off to their appropiate behavior.
-    if( peerDesc.behavior == BEHAVE_M1_BUY_FISH ) {
-        mOne_buyFish(peerDesc, address, peer_fd);
+    if( peerDesc->behavior == BEHAVE_M1_BUY_FISH ) {
+        peerDesc->buyType = FISH;
+        std::thread t1(delayedSellerSeek, *peerDesc);
+        t1.detach();
+        peerListen(peerDesc, address);
+        //mOne_buyFish(peerDesc, address, peer_fd);
     }
-    else if ( peerDesc.behavior == BEHAVE_M1_SELL_FISH ){
-        mOne_sellFish(peerDesc, address, peer_fd);
+    else if ( peerDesc->behavior == BEHAVE_M1_SELL_FISH ){
+        peerDesc->numFish = 1;
+        peerDesc->buyType = NONE;
+        peerListen(peerDesc, address);
+        //mOne_sellFish(peerDesc, address, peer_fd);
     }
-    else if( peerDesc.behavior == BEHAVE_TEST_X1 ){
+    else if( peerDesc->behavior == BEHAVE_TEST_X1 ){
 
         int x2 = 0;
         // Prepare neighbor address
         struct sockaddr_in testx2_addr;
         testx2_addr.sin_family = AF_INET;
-        testx2_addr.sin_port = htons(peerDesc.neighborPort);
+        testx2_addr.sin_port = htons(peerDesc->neighborPort);
         char* x2_hello = "Hello from test x1!";
 
         // Attempt to connect to neighbor
@@ -78,7 +85,7 @@ int makePeer(struct peer peerDesc){
 
 
     }
-    else if ( peerDesc.behavior == BEHAVE_TEST_X2 ){
+    else if ( peerDesc->behavior == BEHAVE_TEST_X2 ){
 
         int x1 = 0;
         int valRead = 0;
@@ -492,6 +499,12 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
 
 
 
+}
+
+void delayedSellerSeek( struct peer peerDesc ){
+    sleep(2);
+    struct sockaddr_in address;
+    sellerSeek(peerDesc, address);
 }
 
 /***********************************************************************************/

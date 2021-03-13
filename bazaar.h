@@ -66,12 +66,13 @@ struct test{
 void testMultiCompile();
 int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSocket );
 int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSocket );
+void delayedSellerSeek( struct peer peerDesc );
 
 /*****************************************************************************************************/
 // Proper functions, used for the others
 
 // Makes a peer and all things related to it; the socket and the lick, from the peer description.
-int makePeer(struct peer peerDesc);
+int makePeer(struct peer *peerDesc);
 
 // The core listening loop -- will take a socket and a pointer to a peerDesc, and will listen, spinning off
 // threads for whatever is recieved.
@@ -119,11 +120,13 @@ void printPeerDesc(struct peer toPrint);
 #define MESSAGE_SELLER_FOUND 2
 #define MESSAGE_BUY 3
 #define MESSAGE_BUY_ACK 4
+#define MESSAGE_KILL_NETWORK 5      // This message KILLS THE NETWORK, OH NO
 
 
 
 // The constants that determine what type of goods are avaiable for purchase or selling, as well as
 // how many of them there are
+#define NONE 99         // Used when saying that the good being purchased or sold is nonexistant.
 #define FISH 0
 #define BOAR 1
 #define DUCK 2
@@ -136,7 +139,7 @@ void printPeerDesc(struct peer toPrint);
 #define BEHAVE_M1_SELL_FISH 1
 #define BEHAVE_M1_BUY_FISH 2
 #define BEHAVE_M1_SELL_BOAR 3
-#define BEHAVE_M1_BUY_BOAR 4
+#define BEHAVE_M1_NO_BUY_BOAR 4
 #define BEHAVE_M1_SELL_ANY 5
 #define BEHAVE_M1_BUY_ANY 6
 
