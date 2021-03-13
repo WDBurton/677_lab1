@@ -99,6 +99,13 @@ int buyAck(struct peer *peerDesc, int goodType);
 
 
 
+/*****************************************************************************************************/
+// Testing functions; used to test functionality.
+
+void printPeerDesc(struct bazaarMessage toPrint);
+
+
+
 // Constants for useage everywhere
 
 // The constants that determine what type of peer it is
