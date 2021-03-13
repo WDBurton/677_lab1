@@ -11,6 +11,7 @@
 void milestoneOne(){
 
     struct peer peerDesc;
+    peerDesc.showWork = true;
     peerDesc.port = 8080;
     peerDesc.neighborPort = 8081;
     //peerDesc.behavior = BEHAVE_TEST_X1;

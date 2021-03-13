@@ -14,7 +14,8 @@ struct peer{
     int numDuck;        // '             duck                  '
     int buyType;        // The type of good currently wanted for purchase
     int behavior;       // The behavior, if specified, for testing purposes.  Otherwise it will be 0.
-    int sellerOut;      // Lets the peer know if the seller that they're buying from is out of product.
+    bool sellerOut;     // Lets the peer know if the seller that they're buying from is out of product.
+    bool showWork;      // Lets the code know to work slow, and to show every step of it.
 };
 
 
@@ -63,8 +64,6 @@ struct test{
 
 // The functions in bazaar
 void testMultiCompile();
-int buyer(int peerId, int portNum, int otherPort);
-int seller(int peerId, int portNum, int otherPort);
 int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSocket );
 int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSocket );
 

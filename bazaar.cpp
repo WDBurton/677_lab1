@@ -107,7 +107,7 @@ int makePeer(struct peer peerDesc){
 // The 'peerListen' function.  Listens to the socket in an infinite loop, and creates a detatched thread to
 // deal with whtever message it recieves.
 int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
-    bool debugThis = true;
+    bool debugThis = false;
     int sizeRead = 0;
     int tempSocket = 0;
     //struct bazaarMessage toRead;
@@ -132,11 +132,6 @@ int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
                                     << "CONT -- s_addr: " << address.sin_addr.s_addr << "\n"; 
         
         tempSocket = 0;
-        // Listen!
-        /*if( listen(peerDesc->socket, 50) < 0 ){
-            perror("peerListen function failed");
-            exit(EXIT_FAILURE);
-        }*/
 
         if( debugThis ) std::cout << "PEERLISTEN:  Peer " << peerDesc->ID << " accepting...\n";
 
@@ -174,58 +169,55 @@ int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
 // The 'peerRecieve' function.  When something is heard on a socket, it deals with the message
 // it was sent.
 int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaarMessage toRespond ){
-    bool debugThis = false;
+    // This entire function is basically a massive switch statement.  Depending on the type of message
+    // it recieves, it behaves accordingly.  There are multiple outputs to help show what's going on
+    // if the user wants to see, and it can slow it down for demonstration purposes.
+
+    // An initial set of debug variables and printing.
+    bool debugThis = false || peerDesc->showWork;
     bool thisDebugMax = false;
-    //bool wubba = true;
-    sleep(1);
-    /*if(thisDebugMax) std::cout << "REC: START\n";
-    if(thisDebugMax) printPeerDesc(*peerDesc);*/
-    if(debugThis){
-        std::cout << "\n";//"REC: START\n";
-    }
+    if(peerDesc->showWork) sleep(1);
+    if(thisDebugMax || debugThis) std::cout << "REC: START\n";
+    if(peerDesc->showWork) std::cout << "REC: PEER " << peerDesc->ID << "\n";
+    if(thisDebugMax) printPeerDesc(*peerDesc);
 
     // This is basically just a massive switch statement.
     switch( toRespond.type ){
         case MESSAGE_BUY:                   // The case for the buy message
-            //if(debugThis) std::cout << "REC: Message received: Buy, starting Buy Ack\n";
+            if(debugThis) std::cout << "REC: Message received: Buy, starting Buy Ack\n";
             buyAck(peerDesc, toRespond.message.buy.goodType);
             break;
         case MESSAGE_BUY_ACK:
-            //if(debugThis) std::cout << "REC: Message received: Buy Ack\n";
+            if(debugThis) std::cout << "REC: Message received: Buy Ack\n";
             if(toRespond.message.buyAck.numBought > 0){
                 // If buyTotal was not 0, buy more!
-                //if(debugThis) std::cout << "REC: Starting Buy\n";
+                if(debugThis) std::cout << "REC: Starting Buy\n";
                 buy(*peerDesc);
             }else{      
                 // If buyTotal was 0, wait one second, and send out a message for a new seller!
-                /*std::cout   << "REC: The seller ran out of goods...\n"
-                            << "REC: Waiting two seconds before looking for new seller.\n";
-                //sleep(2);
-                std::cout << "REC: Wait done!  Setting value to look for new seller!\n";*/
-                //peerDesc->sellerOut = true;
-                //buy(*peerDesc);
-                //if(debugThis) std::cout << "REC: Starting Seller Seek\n";
+                if(debugThis) std::cout << "REC: The seller ran out of goods; starting sellerSeek\n";
                 sellerSeek(*peerDesc, address);          
             }
             break;
         case MESSAGE_SELLER_FOUND:          // The case for seller found message
-            //if(debugThis) std::cout << "REC:  Message received: Seller Found\n";
+            if(debugThis) std::cout << "REC:  Message received: Seller Found\n";
             buy(*peerDesc);
             //sellerSeek(*peerDesc, address);
             break;
         case MESSAGE_SELLER_SEEK:           // The case for seller seek message
             // If the peer has a good to sell, then it responds with seller found.
             // Otherwise, it sends the message to all of its neighbors.
-            //if (debugThis) std::cout << "REC:  Message received: Seller Seek\n";
-            if( true
-                /*toRespond.message.sellerSeek.goodType == FISH && peerDesc->numFish > 0 ||
-                toRespond.message.sellerSeek.goodType == BOAR && peerDesc->numBoar > 0 ||
-                toRespond.message.sellerSeek.goodType == DUCK && peerDesc->numDuck > 0*/
+            if (debugThis) std::cout << "REC:  Message received: Seller Seek\n";
+            if( 
+                (toRespond.message.sellerSeek.goodType == FISH && peerDesc->numFish > 0) ||
+                (toRespond.message.sellerSeek.goodType == BOAR && peerDesc->numBoar > 0) ||
+                (toRespond.message.sellerSeek.goodType == DUCK && peerDesc->numDuck > 0)
             ){
                 // It wants a good we have!  Time to send it back!
-                //if (debugThis) std::cout << "REC:  Starting sellerFound\n";
+                if (debugThis) std::cout << "REC:  Starting sellerFound\n";
                 sellerFound(*peerDesc, toRespond, address);
             } else{
+                std::cout << "Number of fish: " << peerDesc->numFish << "\n";
                 std::cout << "TODO: Seller seek else statement in peerReceive\n";
             }
             break;
@@ -233,6 +225,7 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
             std::cout << "---------------------------------\n"
                       << "ERROR: UNKNOWN MESSAGE TYPE\n";
     }
+    if(peerDesc->showWork) std::cout << "\n---------------------\n\n";
 }
 
 
@@ -240,7 +233,7 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
 // The 'sendMessage' function.  Sends out a bazaar message; creates the socket and sends it out.
 int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr ){
     bool debugThis = false;
-    bool debugThisMax = true;
+    bool debugThisMax = false;
     
     // Creates the socket
     int sendSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -249,16 +242,18 @@ int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr ){
         exit(EXIT_FAILURE);
     }
 
+    // Debug printing
     if(debugThis) std::cout << "SEND MESSAGE:  Attempting to send message...\n";
     if(debugThisMax) printBazaarMessage(toSend);
     if(debugThisMax) std::cout << "SEND MESSAGE:  Sending message to: " << targetAddr.sin_port << "\n";
 
+    // Ensures the address works.
     targetAddr.sin_family = AF_INET;
+    // BEWARE NEXT LINE, is desturbingly important!
     targetAddr.sin_addr.s_addr = INADDR_ANY;
-    int len = sizeof(targetAddr);
     
     // Now for the connection!
-    if( connect( sendSocket, (struct sockaddr *)&targetAddr, /*sizeof(targetAddr)*/len ) < 0 ){
+    if( connect( sendSocket, (struct sockaddr *)&targetAddr, sizeof(targetAddr) ) < 0 ){
         perror("SEND MESSAGE func failed to connect to neighbor");
         exit(EXIT_FAILURE);
     }
@@ -266,10 +261,12 @@ int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr ){
     if(debugThis) std::cout << "SEND MESSAGE:  Sending message of type: "
                             << toSend.type << "\n";
 
+    // Sending the message
     send( sendSocket, &toSend, sizeof(toSend), 0 );
 
     if(debugThis) std::cout << "SEND MESSAGE:  Message sent\n";
 
+    // Closing the socket, as the message is sent.
     close( sendSocket );
 }
 
@@ -346,7 +343,7 @@ int buy(struct peer peerDesc){
 
 // The 'buyAck' function.  Gives away a thing!  Currently relies on the fact there's only one neighbor.
 int buyAck(struct peer *peerDesc, int goodType){
-    bool thisDebug = true;
+    bool thisDebug = false;
 
     bool buyGood = true;
     struct bazaarMessage toSend;
@@ -354,10 +351,11 @@ int buyAck(struct peer *peerDesc, int goodType){
 
     struct sockaddr_in buyer;
     buyer.sin_port = htons(peerDesc->neighborPort);
-    buyer.sin_family = AF_INET;
 
     if (thisDebug) std::cout << "BUYACK:  Starting purchase\n";
-    // First off, decriment the type we're selling.
+    
+    // A switch case depending on the good type found.  Could have used an array, but this implementation is
+    // more human-readable.
     switch(goodType){
         // For each, if we have enough, we decrement; if we don't, then we set 'buyGood' to false, instead.
         case FISH:
@@ -366,7 +364,7 @@ int buyAck(struct peer *peerDesc, int goodType){
                 buyGood = false;
                 break;
             }
-                if(thisDebug) std::cout << "BUYACK:  FISH from " << peerDesc->numFish << " to " << peerDesc->numFish-1 << "\n";
+            if(thisDebug) std::cout << "BUYACK:  FISH from " << peerDesc->numFish << " to " << peerDesc->numFish-1 << "\n";
             peerDesc->numFish -= 1;
             break;
         case BOAR:
@@ -375,6 +373,7 @@ int buyAck(struct peer *peerDesc, int goodType){
                 buyGood = false;
                 break;
             }
+            if(thisDebug) std::cout << "BUYACK:  BOAR from " << peerDesc->numFish << " to " << peerDesc->numFish-1 << "\n";
             peerDesc->numBoar -= 1;
             break;
         case DUCK:
@@ -383,6 +382,7 @@ int buyAck(struct peer *peerDesc, int goodType){
                 buyGood = false;
                 break;
             }
+            if(thisDebug) std::cout << "BUYACK:  DUCK from " << peerDesc->numFish << " to " << peerDesc->numFish-1 << "\n";
             peerDesc->numDuck -= 1;
             break;
     }
@@ -403,7 +403,7 @@ int buyAck(struct peer *peerDesc, int goodType){
     if( !buyGood && peerDesc->behavior == BEHAVE_M1_SELL_FISH){
         // If we're doing milestone one, and we're empty, we need to restock!
         std::cout << "BUYACK:  Restocking fish for milestone 1.  Restocking.\n";
-        peerDesc->numFish += 6;
+        peerDesc->numFish += 5;
         std::cout << "BUYACK:  Restocked.  Fish num is now: " << peerDesc->numFish <<"\n";
     };
 }
@@ -427,9 +427,9 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSoc
     // Variable creation; the to-be recieved message, and the empty socket.
     int buyerSocket, valRead;
     int adderLen = sizeof(address);
-    peerDesc.numFish = 0;
+    peerDesc.numFish = 1;
     peerDesc.numBoar = 0;
-    peerDesc.numFish = 0;
+    peerDesc.numDuck = 0;
     struct peer peerCopy = peerDesc;
     struct bazaarMessage buyerMessage, sellerMessage;
 
@@ -463,7 +463,7 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
     peerDesc.sellerOut = false;
     peerDesc.numFish = 0;
     peerDesc.numBoar = 0;
-    peerDesc.numFish = 0;
+    peerDesc.numDuck = 0;
     struct peer peerCopy = peerDesc;
     std::thread buyerListen(peerListen, &peerDesc, address);
     //buyerListen.detach();
@@ -540,134 +540,4 @@ void printPeerDesc( struct peer toPrint ){
                 << "\n--------------------------------------\n";
 
 
-}
-
-
-// This is the code for a buyer
-int buyer(int peerId, int portNum, int otherPort){
-    // The buyer function creates the socket, binds it to the given port number, and then stands by for testing.
-    // For now, it's a lot of copy-pasting from other code, to ensure I can get it to work right.
-    int server_fd, new_socket, valread; 
-	struct sockaddr_in address;
-    struct sockaddr_in neighbor;
-	int opt = 1; 
-	int addrlen = sizeof(address); 
-	char buffer[1024] = {0}; 
-	char *hello = "Hello from buyer"; 
-	
-	// Creating socket file descriptor 
-	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
-	{ 
-		perror("socket failed"); 
-		exit(EXIT_FAILURE); 
-	} 
-	
-	// Forcefully attaching socket to the port number given
-	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, 
-												&opt, sizeof(opt))) 
-	{ 
-		perror("setsockopt"); 
-		exit(EXIT_FAILURE); 
-	} 
-	address.sin_family = AF_INET; 
-	address.sin_addr.s_addr = INADDR_ANY; 
-	address.sin_port = htons( portNum ); 
-	
-	// Forcefully attaching socket to the port number given
-	if (bind(server_fd, (struct sockaddr *)&address, 
-								sizeof(address))<0) 
-	{ 
-		perror("bind failed"); 
-		exit(EXIT_FAILURE); 
-	}
-
-    // Added code to know who the neighbor is
-    neighbor.sin_family = AF_INET;
-    neighbor.sin_port = htons(otherPort);
-
-    if (connect(server_fd, (struct sockaddr *)&neighbor, sizeof(neighbor)) < 0) 
-	{ 
-		printf("\nConnection Failed \n"); 
-		return -1; 
-	} 
-
-	send(server_fd, hello , strlen(hello) , 0 ); 
-	printf("Hello message sent from buyer\n"); 
-	valread = read( server_fd , buffer, 1024); 
-	printf("%s\n",buffer ); 
-	return 0; 
-
-
-}
-
-
-// This is the code for a seller
-int seller(int peerId, int portNum, int otherPort){
-    // The seller function creates the socket, binds it to the given port number, and then stands by for testing.
-    // For now, a lot of copying until I can make sure it works.
-    int server_fd, new_socket, valread; 
-	struct sockaddr_in address;
-    struct sockaddr_in neighbor; 
-	int opt = 1; 
-	int addrlen = sizeof(address); 
-	char buffer[1024] = {0}; 
-	char *hello = "Hello from seller"; 
-	
-	// Creating socket file descriptor 
-	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
-	{ 
-		perror("socket failed"); 
-		exit(EXIT_FAILURE); 
-	} 
-	
-	// Forcefully attaching socket to the port number given 
-	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, 
-												&opt, sizeof(opt))) 
-	{ 
-		perror("setsockopt"); 
-		exit(EXIT_FAILURE); 
-	} 
-	address.sin_family = AF_INET; 
-	address.sin_addr.s_addr = INADDR_ANY; 
-	address.sin_port = htons( portNum ); 
-	
-	// Forcefully attaching socket to the port number given 
-	if (bind(server_fd, (struct sockaddr *)&address, 
-								sizeof(address))<0) 
-	{ 
-		perror("bind failed"); 
-		exit(EXIT_FAILURE); 
-	} 
-
-    
-    // Added code to know who the neighbor is
-    neighbor.sin_family = AF_INET;
-    neighbor.sin_port = htons(otherPort);
-
-    
-	if (listen(server_fd, 3) < 0) 
-	{ 
-		perror("listen"); 
-		exit(EXIT_FAILURE); 
-	} 
-	if ((new_socket = accept(server_fd, (struct sockaddr *)&address, 
-					(socklen_t*)&addrlen))<0) 
-	{ 
-		perror("accept"); 
-		exit(EXIT_FAILURE); 
-	} 
-	valread = read( new_socket , buffer, 1024); 
-	printf("%s\n",buffer ); 
-	send(new_socket , hello , strlen(hello) , 0 ); 
-	printf("Hello message sent from seller\n"); 
-	return 0; 
-
-}
-
-
-
-
-
-void testMultiCompile(){
-    std::cout << "Multi compile works!";
 }
