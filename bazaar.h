@@ -91,7 +91,7 @@ int sellerSeek(struct peer peerDesc, struct suckaddr_in address);
 int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct sockaddr_in address);
 
 // Sends out a buy message.
-int buy(struct peer peerDesc, struct sockaddr_in address);
+int buy(struct peer peerDesc);
 
 // Sends out a buyAck message.  Requires the pointer to the actuall peerDesc, as it's adjusting and
 // reading real time values.

@@ -107,12 +107,14 @@ int makePeer(struct peer peerDesc){
 // The 'peerListen' function.  Listens to the socket in an infinite loop, and creates a detatched thread to
 // deal with whtever message it recieves.
 int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
-    bool debugThis = true;
+    bool debugThis = false;
     int tempSocket;
     struct bazaarMessage toRead;
     int addrLen = sizeof(address);
 
     if(debugThis) std::cout << "peerListen start, listening in on port " << peerDesc->port << "\n";
+
+    // Listens for all eternity!
     while(true){
         
         if(debugThis) std::cout << "peerListen loop, new start\n";
@@ -124,8 +126,8 @@ int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
         }
 
         if(debugThis) std::cout << "Something has been heard\n";
-        // If something is heard, time to deal with it!  Get message and spin off thread!
 
+        // If something is heard, time to deal with it!  Get message and spin off thread!
         if( (tempSocket = accept(peerDesc->socket, (struct sockaddr *)&address, (socklen_t *)&addrLen)) < 0 ){
             perror("peerListen failed to accept connection!");
             exit(EXIT_FAILURE);
@@ -133,6 +135,7 @@ int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
 
         if(debugThis) std::cout << "Something has been accepted\n";
 
+        // This is the reading...
         if( read( tempSocket, &toRead, sizeof(toRead) ) < 0 ){
             perror("peerListen read has failed");
             exit(EXIT_FAILURE);
@@ -140,6 +143,7 @@ int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
 
         if(debugThis) std::cout << "Something has been read\n";
 
+        //... And then spin off the thread, detatch it, close the socket, and restart.
         std::thread t(peerReceive, peerDesc, address, toRead);
         t.detach();
         close(tempSocket);
@@ -159,7 +163,8 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
             std::cout << "TODO: Buy in peerReceive\n";
             break;
         case MESSAGE_SELLER_FOUND:          // The case for seller found message
-            std::cout << "TODO: Seller found in peerReceive\n";
+            if(thisDebug) std::cout << "Message found: Seller Found\n";
+            buy(*peerDesc);
             break;
         case MESSAGE_SELLER_SEEK:           // The case for seller seek message
             // If the peer has a good to sell, then it responds with seller found.
@@ -231,8 +236,6 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
 
     // Send the message!
     sendMessage( toSend, neighbor );
-
-
 }
 
 
@@ -258,8 +261,20 @@ int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct
     sendMessage( toSend, neighbor );
 }
 
+// The 'buy' function.  Purchases a thing!  Currently relies on the fact that there's only one neibhro.
+int buy(struct peer peerDesc){
+    // We need to make the message, first
+    struct bazaarMessage toSend;
+    toSend.type = MESSAGE_BUY;
+    toSend.message.buy.goodType = peerDesc.buyType;
+    struct sockaddr_in neighbor;
+    neighbor.sin_port = htons(peerDesc.neighborPort);
+    neighbor.sin_family = AF_INET;
 
-// The 'buy'
+    sendMessage( toSend, neighbor );
+
+}
+
 // The 'buyAck'
 
 
