@@ -107,17 +107,23 @@ int makePeer(struct peer peerDesc){
 // The 'peerListen' function.  Listens to the socket in an infinite loop, and creates a detatched thread to
 // deal with whtever message it recieves.
 int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
+    bool debugThis = true;
     int tempSocket;
     struct bazaarMessage toRead;
     int addrLen = sizeof(address);
 
+    if(debugThis) std::cout << "peerListen start, listening in on port " << peerDesc->port << "\n";
     while(true){
+        
+        if(debugThis) std::cout << "peerListen loop, new start\n";
         tempSocket = 0;
         // Listen!
         if( listen(peerDesc->socket, 5) < 0 ){
             perror("peerListen function failed");
             exit(EXIT_FAILURE);
         }
+
+        if(debugThis) std::cout << "Something has been heard\n";
         // If something is heard, time to deal with it!  Get message and spin off thread!
 
         if( (tempSocket = accept(peerDesc->socket, (struct sockaddr *)&address, (socklen_t *)&addrLen)) < 0 ){
@@ -125,7 +131,15 @@ int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
             exit(EXIT_FAILURE);
         }
 
-        read( tempSocket, &toRead, sizeof(toRead) );
+        if(debugThis) std::cout << "Something has been accepted\n";
+
+        if( read( tempSocket, &toRead, sizeof(toRead) ) < 0 ){
+            perror("peerListen read has failed");
+            exit(EXIT_FAILURE);
+        };
+
+        if(debugThis) std::cout << "Something has been read\n";
+
         std::thread t(peerReceive, peerDesc, address, toRead);
         t.detach();
         close(tempSocket);
@@ -136,7 +150,8 @@ int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
 // The 'peerRecieve' function.  When something is heard on a socket, it deals with the message
 // it was sent.
 int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaarMessage toRespond ){
-    bool thisDebug = true;
+    bool thisDebug = false;
+    if(thisDebug) std::cout << "peerRecieive start\n";
 
     // This is basically just a massive switch statement.
     switch( toRespond.type ){
@@ -190,7 +205,7 @@ int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr ){
 
 // The 'sellerSeek' function.  Sends out a sellerSeek message.
 int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
-    bool thisDebug = false;      // A simple debug variable used in functions that are not working for some reason.
+    bool thisDebug = true;      // A simple debug variable used in functions that are not working for some reason.
 
     // This simply creates a message, and sends it out to all neighbors.
     // The buyerID and first prevHops are both the peer's ID, with the goodType being what the peer
@@ -203,7 +218,8 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
     toSend.message.sellerSeek.prevHops[0] = peerDesc.ID;
 
     if(thisDebug) std::cout << "SellerSeek message type: " << toSend.type
-                            << " | SellerSeek good type: " << toSend.message.sellerSeek.goodType << "\n";
+                            << " | SellerSeek good type: " << toSend.message.sellerSeek.goodType << "\n"
+                            << "To port: " << peerDesc.neighborPort <<"\n";
 
     // Now we need to actually make the connection to all of the neighbors, and send the message out.
     // TODO: This will be a for loop over all neighbors.
@@ -268,7 +284,12 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSoc
     peerDesc.numFish = 5;
     struct bazaarMessage buyerMessage, sellerMessage;
 
-    peerListen(&peerDesc, address);
+    std::thread sellerListen(peerListen, &peerDesc, address);
+    sellerListen.detach();
+    //peerListen(&peerDesc, address);
+    while(true){
+        sleep(1);
+    }
 
 
 
@@ -284,13 +305,18 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
     // time it will print a message.
 
 
-    // As we know how this will go, this will not use threads.  For now, the goal is a basic ping, using the message
-    // structs.
-
     // Now that I have the sellerSeek function, going to attempt to use that.
     peerDesc.buyType = FISH;
-    if(debugAll) std::cout << "buyFish message sent\n";
+    std::thread buyerListen(peerListen, &peerDesc, address);
+    buyerListen.detach();
+
+    sleep(1);
+    std::cout << "Time to start the buying of fish!\n";
+
     sellerSeek( peerDesc, address );
+    while(true){
+        sleep(1);
+    };
 
 
 
