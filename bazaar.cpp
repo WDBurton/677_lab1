@@ -108,24 +108,33 @@ int makePeer(struct peer peerDesc){
 // deal with whtever message it recieves.
 int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
     bool debugThis = true;
+    int sizeRead = 0;
     int tempSocket;
     struct bazaarMessage toRead;
     int addrLen = sizeof(address);
 
     if(debugThis) std::cout << "peerListen start, listening in on port " << peerDesc->port << "\n";
 
+    
+    // Listen!
+    if( listen(peerDesc->socket, 50) < 0 ){
+        perror("peerListen function failed");
+        exit(EXIT_FAILURE);
+    }
+
     // Listens for all eternity!
     while(true){
 
         if( debugThis ) std::cout << "PEERLISTEN:  Peer " << peerDesc->ID << " listening on port "
-                                    << peerDesc->port << " | " << htons(peerDesc->port) << "\n";
+                                    << peerDesc->port << " | " << htons(peerDesc->port) << "\n"
+                                    << "CONT -- sin_family: " << address.sin_family << "\n";
         
         tempSocket = 0;
         // Listen!
-        if( listen(peerDesc->socket, 50) < 0 ){
+        /*if( listen(peerDesc->socket, 50) < 0 ){
             perror("peerListen function failed");
             exit(EXIT_FAILURE);
-        }
+        }*/
 
         if( debugThis ) std::cout << "PEERLISTEN:  Peer " << peerDesc->ID << " accepting...\n";
 
@@ -138,17 +147,20 @@ int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
         if( debugThis ) std::cout << "PEERLISTEN:  Peer " << peerDesc->ID << " reading...\n";
 
         // This is the reading...
-        if( read( tempSocket, &toRead, sizeof(toRead) ) < 0 ){
+        sizeRead = read( tempSocket, &toRead, sizeof(toRead) );
+        if( sizeRead < 0 ){
             perror("peerListen read has failed");
             exit(EXIT_FAILURE);
         };
 
-        if( debugThis ) std::cout << "PEERLISTEN:  Peer " << peerDesc->ID << " processing...\n";
+        if( debugThis ) std::cout << "PEERLISTEN:  Peer " << peerDesc->ID << " has read "
+                                    << sizeRead << " Bytes, processing...\n";
 
         //... And then spin off the thread, detatch it, close the socket, and restart.
         std::thread t(peerReceive, peerDesc, address, toRead);
         t.detach();
         close(tempSocket);
+        if( debugThis ) std::cout << "PEERLISTEN:  Peer " << peerDesc->ID << " finished; restarting loop.\n";
     }
 
     std::cout << "ERROR ERROR ERROR ERROR\n"
@@ -177,7 +189,7 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
                 // If buyTotal was 0, wait one second, and send out a message for a new seller!
                 std::cout   << "REC: The seller ran out of goods...\n"
                             << "REC: Waiting two seconds before looking for new seller.\n";
-                sleep(2);
+                //sleep(2);
                 std::cout << "REC: Wait done!  Setting value to look for new seller!\n";
                 peerDesc->sellerOut = true;
                 //sellerSeek(*peerDesc, address);          
@@ -191,10 +203,10 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
             // If the peer has a good to sell, then it responds with seller found.
             // Otherwise, it sends the message to all of its neighbors.
             if (thisDebug) std::cout << "Message received: Seller Seek\n";
-            if(
-                toRespond.message.sellerSeek.goodType == FISH && peerDesc->numFish > 0 ||
+            if( true
+                /*toRespond.message.sellerSeek.goodType == FISH && peerDesc->numFish > 0 ||
                 toRespond.message.sellerSeek.goodType == BOAR && peerDesc->numBoar > 0 ||
-                toRespond.message.sellerSeek.goodType == DUCK && peerDesc->numDuck > 0
+                toRespond.message.sellerSeek.goodType == DUCK && peerDesc->numDuck > 0*/
             ){
                 // It wants a good we have!  Time to send it back!
                 sellerFound(*peerDesc, toRespond, address);
@@ -254,8 +266,7 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
     toSend.message.sellerSeek.hopNum = 1;                       // TODO: Make this a variable that can be assigned at very start.
     toSend.message.sellerSeek.prevHops[0] = peerDesc.ID;
 
-    if(thisDebug) std::cout << "SellerSeek message type: " << toSend.type
-                            << " | SellerSeek good type: " << toSend.message.sellerSeek.goodType << "\n"
+    if(thisDebug) std::cout << "SELLERSEEK good type: " << toSend.message.sellerSeek.goodType << "\n"
                             << "To port: " << peerDesc.neighborPort <<"\n";
 
     // Now we need to actually make the connection to all of the neighbors, and send the message out.
@@ -264,6 +275,7 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
     // Make the neighbor address
     struct sockaddr_in neighbor;
     neighbor.sin_family = AF_INET;
+	neighbor.sin_addr.s_addr = INADDR_ANY; 
     neighbor.sin_port = htons(peerDesc.neighborPort);  //TODO: Currently, this relies on there being only one neighbor.  Fix that.
 
     // Send the message!
@@ -321,26 +333,30 @@ int buyAck(struct peer *peerDesc, int goodType){
     buyer.sin_port = htons(peerDesc->neighborPort);
     buyer.sin_family = AF_INET;
 
-    if (thisDebug) std::cout << "BUYACK:  Starting switch case\n";
+    if (thisDebug) std::cout << "BUYACK:  Starting purchase\n";
     // First off, decriment the type we're selling.
     switch(goodType){
         // For each, if we have enough, we decrement; if we don't, then we set 'buyGood' to false, instead.
         case FISH:
-            if(peerDesc->numFish < 0){
+            if(peerDesc->numFish < 1){
+                if(thisDebug) std::cout << "BUYACK:  FISH out\n";
                 buyGood = false;
                 break;
             }
+                if(thisDebug) std::cout << "BUYACK:  FISH from " << peerDesc->numFish << " to " << peerDesc->numFish-1 << "\n";
             peerDesc->numFish -= 1;
             break;
         case BOAR:
-            if(peerDesc->numBoar < 0){
+            if(peerDesc->numBoar < 1){
+                if(thisDebug) std::cout << "BUYACK:  BOAR out\n";
                 buyGood = false;
                 break;
             }
             peerDesc->numBoar -= 1;
             break;
         case DUCK:
-            if(peerDesc->numDuck < 0){
+            if(peerDesc->numDuck < 1){
+                if(thisDebug) std::cout << "BUYACK:  DUCK out\n";
                 buyGood = false;
                 break;
             }
@@ -388,14 +404,15 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSoc
     // Variable creation; the to-be recieved message, and the empty socket.
     int buyerSocket, valRead;
     int adderLen = sizeof(address);
-    peerDesc.numFish = 10;
+    peerDesc.numFish = 1;
     struct bazaarMessage buyerMessage, sellerMessage;
 
     std::thread sellerListen(peerListen, &peerDesc, address);
     //sellerListen.detach();
     //peerListen(&peerDesc, address);
     while(true){
-        sleep(1);
+        sleep(5);
+        std::cout << "Is the seller awake...?  " << sellerListen.joinable() << "\n";
     }
 
 
@@ -410,6 +427,7 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
 
     // For the purposes of the milestone, it will buy out the buyer five times before finishing itself, and every
     // time it will print a message.
+    struct peer peerCopy = peerDesc;
 
 
     // Now that I have the sellerSeek function, going to attempt to use that.
@@ -422,12 +440,18 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
     std::cout << "Time to start the buying of fish!\n";
 
     sellerSeek( peerDesc, address );
+    //std::cout << "Is listening?  " << buyerListen.joinable() << "\n";
     while(true){
         sleep(5);
         if(peerDesc.sellerOut){
             peerDesc.sellerOut = false;
             std::cout << "MILESTONE 1, BUY FISH:  Starting new sellerSeek\n";
-            sellerSeek( peerDesc, address );
+            sellerSeek( peerCopy, address );
+        } else {
+            // I'm going to assume something has gone wrong if we get here, for testing purposes.
+            //buyerListen.std::terminate();
+            //std::terminate() buyerListen;
+            //std::cout << "Still listening...?  "  << buyerListen.joinable() << "\n";
         }
     };
 
