@@ -85,7 +85,7 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
 int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr );
 
 // Sends out a sellerSeek call.
-int sellerSeek(struct peer peerDesc, struct suckaddr_in address);
+int sellerSeek(struct peer peerDesc, struct sockaddr_in address);
 
 // Sends out a sellerFound call.
 int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct sockaddr_in address);

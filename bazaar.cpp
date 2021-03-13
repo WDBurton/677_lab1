@@ -165,6 +165,17 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
             break;
         case MESSAGE_BUY_ACK:
             if(thisDebug) std::cout << "Message received: Buy Ack\n";
+            if(toRespond.message.buyAck.numBought > 0){
+                // If buyTotal was not 0, buy more!
+                buy(*peerDesc);
+            }else{      
+                // If buyTotal was 0, wait one second, and send out a message for a new seller!
+                std::cout   << "The seller ran out of goods...\n"
+                            << "Waiting one second before looking for new seller.\n";
+                sleep(1);
+                std::cout << "Wait done!  Looking for new seller!\n";
+                sellerSeek(*peerDesc, address);          
+            }
             break;
         case MESSAGE_SELLER_FOUND:          // The case for seller found message
             if(thisDebug) std::cout << "Message received: Seller Found\n";
