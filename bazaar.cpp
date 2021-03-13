@@ -2,6 +2,7 @@
 
 #include "bazaar.h"
 #include <iostream>
+#include <thread>
 
 // Uncertain how many of these are neccessary, but including them anyway for now
 #include <unistd.h> 
@@ -44,6 +45,9 @@ int makePeer(struct peer peerDesc){
         perror("Port Bind Failure!");
         exit(EXIT_FAILURE);
     }
+
+    // Storing the socket fd in the peerDesc
+    peerDesc.socket = peer_fd;
 
     // We should now have a basic socket.  Now, we send them off to their appropiate behavior.
     if( peerDesc.behavior == BEHAVE_M1_BUY_FISH ) {
@@ -98,6 +102,46 @@ int makePeer(struct peer peerDesc){
 
 
 }
+
+
+// The 'peerListen' function.  Listens to the socket in an infinite loop, and creates a detatched thread to
+// deal with whtever message it recieves.
+int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
+    int tempSocket;
+    struct bazaarMessage toRead;
+    int addrLen = sizeof(address);
+
+    while(true){
+        tempSocket = 0;
+        // Listen!
+        if( listen(peerDesc->socket, 5) < 0 ){
+            perror("peerListen function failed");
+            exit(EXIT_FAILURE);
+        }
+        // If something is heard, time to deal with it!  Get message and spin off thread!
+
+        if( (tempSocket = accept(peerDesc->socket, (struct sockaddr *)&address, (socklen_t *)&addrLen)) < 0 ){
+            perror("peerListen failed to accept connection!");
+            exit(EXIT_FAILURE);
+        }
+
+        read( tempSocket, &toRead, sizeof(toRead) );
+        std::thread t(peerReceive, peerDesc, address, toRead);
+        t.detach();
+        close(tempSocket);
+    }
+}
+
+
+// The 'peerRecieve' function.  When something is heard on a socket, it deals with the message
+// it was sent.
+int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaarMessage toRespond ){
+
+    // Basic debug message test
+    std::cout << "Message Received of type: " << toRespond.type << "\n";
+
+}
+
 
 
 // The 'sendMessage' function.  Sends out a bazaar message; creates the socket and sends it out.
@@ -198,10 +242,14 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSoc
     int adderLen = sizeof(address);
     struct bazaarMessage buyerMessage, sellerMessage;
 
+    peerListen(&peerDesc, address);
+
 
     // Loop start here maybe?
 
     // First, we try to listen.
+
+    /*
     if( listen(peerSocket, 3) < 0 ){
         perror("Milestone 1, fish test, seller can not listen to buyer!");
         exit(EXIT_FAILURE);
@@ -238,7 +286,7 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSoc
     
     // We have obtained sellerSeek!  Now to return with sellerFound!
     sleep(1);
-    sellerFound(peerDesc, buyerMessage, neighbor);
+    sellerFound(peerDesc, buyerMessage, neighbor);*/
 
 }
 
@@ -257,8 +305,9 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
 
     // Now that I have the sellerSeek function, going to attempt to use that.
     peerDesc.buyType = FISH;
+    if(debugAll) std::cout << "buyFish message sent\n";
     sellerSeek( peerDesc, address );
-
+    /*
     // Now we should be recieving a proper sellerFound message.  Time to listen for it.
     int sellerSocket, valRead;
     int addrLen = sizeof(address);
@@ -282,7 +331,7 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
         exit(EXIT_FAILURE);
     }
 
-    if(debugAll) std::cout << "SellerSeek message returned\n";
+    if(debugAll) std::cout << "SellerSeek message returned\n";*/
 
 
 

@@ -73,14 +73,21 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
 // Makes a peer and all things related to it; the socket and the lick, from the peer description.
 int makePeer(struct peer peerDesc);
 
+// The core listening loop -- will take a socket and a pointer to a peerDesc, and will listen, spinning off
+// threads for whatever is recieved.
+int peerListen( struct peer *peerDesc, struct sockaddr_in address );
+
+// The 'deal with message' loop -- spun off from peerListen whenever a message is recieved in a detatched thread.
+int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaarMessage toRespond );
+
+// Sends out any message, given a socket address and a message to send.
+int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr );
+
 // Sends out a sellerSeek call.
 int sellerSeek(struct peer peerDesc, struct suckaddr_in address);
 
 // Sends out a sellerFound call.
 int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct sockaddr_in address);
-
-// Sends out any message, given a socket address and a message to send.
-int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr );
 
 // Sends out a buy message.
 int buy(struct peer peerDesc, struct sockaddr_in address);
