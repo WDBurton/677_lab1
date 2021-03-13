@@ -137,8 +137,29 @@ int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
 // it was sent.
 int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaarMessage toRespond ){
 
-    // Basic debug message test
-    std::cout << "Message Received of type: " << toRespond.type << "\n";
+    // This is basically just a massive switch statement.
+    switch( toRespond.type ){
+        case MESSAGE_BUY:                   // The case for the buy message
+            std::cout << "TODO: Buy in peerReceive\n";
+            break;
+        case MESSAGE_SELLER_FOUND:          // The case for seller found message
+            std::cout << "TODO: Seller found in peerReceive\n";
+            break;
+        case MESSAGE_SELLER_SEEK:           // The case for seller seek message
+            // If the peer has a good to sell, then it responds with seller found.
+            // Otherwise, it sends the message to all of its neighbors.
+            if(
+                toRespond.message.sellerSeek.goodType == FISH && peerDesc->numFish > 0 ||
+                toRespond.message.sellerSeek.goodType == BOAR && peerDesc->numBoar > 0 ||
+                toRespond.message.sellerSeek.goodType == DUCK && peerDesc->numDuck > 0
+            ){
+                // It wants a good we have!  Time to send it back!
+                sellerFound(*peerDesc, toRespond, address);
+            } else{
+                std::cout << "TODO: Seller seek else statement in peerReceive\n";
+            }
+            break;
+    }
 
 }
 
