@@ -14,7 +14,7 @@ struct peer{
     int numDuck;        // '             duck                  '
     int buyType;        // The type of good currently wanted for purchase
     int behavior;       // The behavior, if specified, for testing purposes.  Otherwise it will be 0.
-    int sellerOut;     // Lets the peer know if the seller that they're buying from is out of product.
+    int sellerOut;      // Lets the peer know if the seller that they're buying from is out of product.
 };
 
 
@@ -102,7 +102,8 @@ int buyAck(struct peer *peerDesc, int goodType);
 /*****************************************************************************************************/
 // Testing functions; used to test functionality.
 
-void printPeerDesc(struct bazaarMessage toPrint);
+void printBazaarMessage(struct bazaarMessage toPrint);
+void printPeerDesc(struct peer toPrint);
 
 
 

@@ -172,6 +172,9 @@ int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
 // it was sent.
 int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaarMessage toRespond ){
     bool thisDebug = false;
+    bool thisDebugMax = true;
+    if(thisDebugMax) std::cout << "REC: START\n";
+    if(thisDebugMax) printPeerDesc(*peerDesc);
     if(thisDebug) std::cout << "peerRecieive start\n";
 
     // This is basically just a massive switch statement.
@@ -187,11 +190,12 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
                 buy(*peerDesc);
             }else{      
                 // If buyTotal was 0, wait one second, and send out a message for a new seller!
-                std::cout   << "REC: The seller ran out of goods...\n"
+                /*std::cout   << "REC: The seller ran out of goods...\n"
                             << "REC: Waiting two seconds before looking for new seller.\n";
                 //sleep(2);
-                std::cout << "REC: Wait done!  Setting value to look for new seller!\n";
-                peerDesc->sellerOut = true;
+                std::cout << "REC: Wait done!  Setting value to look for new seller!\n";*/
+                //peerDesc->sellerOut = true;
+                //buy(*peerDesc);
                 //sellerSeek(*peerDesc, address);          
             }
             break;
@@ -235,7 +239,7 @@ int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr ){
     }
 
     if(debugThis) std::cout << "Attempting to send message...\n";
-    if(debugThisMax) printPeerDesc(toSend);
+    if(debugThisMax) printBazaarMessage(toSend);
     if(debugThisMax) std::cout << "Sending message to: " << targetAddr.sin_port << "\n";
     
     // Now for the connection!
@@ -377,12 +381,12 @@ int buyAck(struct peer *peerDesc, int goodType){
     sendMessage( toSend, buyer );
 
     // Finally, a behavior check for some of the milestone requirements
-    if( !buyGood && peerDesc->behavior == BEHAVE_M1_SELL_FISH){
+    /*if( !buyGood && peerDesc->behavior == BEHAVE_M1_SELL_FISH){
         // If we're doing milestone one, and we're empty, we need to restock!
         std::cout << "BUYACK:  Restocking fish for milestone 1.  Restocking.\n";
         peerDesc->numFish += 6;
         std::cout << "BUYACK:  Restocked.  Fish num is now: " << peerDesc->numFish <<"\n";
-    };
+    };*/
 }
 
 
@@ -404,7 +408,9 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSoc
     // Variable creation; the to-be recieved message, and the empty socket.
     int buyerSocket, valRead;
     int adderLen = sizeof(address);
-    peerDesc.numFish = 1;
+    peerDesc.numFish = 0;
+    peerDesc.numBoar = 0;
+    peerDesc.numFish = 0;
     struct bazaarMessage buyerMessage, sellerMessage;
 
     std::thread sellerListen(peerListen, &peerDesc, address);
@@ -433,6 +439,9 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
     // Now that I have the sellerSeek function, going to attempt to use that.
     peerDesc.buyType = FISH;
     peerDesc.sellerOut = false;
+    peerDesc.numFish = 0;
+    peerDesc.numBoar = 0;
+    peerDesc.numFish = 0;
     std::thread buyerListen(peerListen, &peerDesc, address);
     //buyerListen.detach();
 
@@ -451,7 +460,7 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
             // I'm going to assume something has gone wrong if we get here, for testing purposes.
             //buyerListen.std::terminate();
             //std::terminate() buyerListen;
-            //std::cout << "Still listening...?  "  << buyerListen.joinable() << "\n";
+            std::cout << "Is the buyer still awake...?  "  << buyerListen.joinable() << "\n";
         }
     };
 
@@ -462,7 +471,7 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
 /***********************************************************************************/
 // Testing functions
 
-void printPeerDesc(struct bazaarMessage toPrint){
+void printBazaarMessage(struct bazaarMessage toPrint){
     
     std::cout << "\n--------------------------------------\n";
     std::cout << "Message Type:  ";
@@ -491,6 +500,21 @@ void printPeerDesc(struct bazaarMessage toPrint){
     std::cout << "\n";
 }
 
+void printPeerDesc( struct peer toPrint ){
+    std::cout << "\n--------------------------------------\n"
+                << "PEER PEER PEER PEER PEER PEER PEER\n"
+                << "ID: " << toPrint.ID << "\n"
+                << "Neighbor Port: " << toPrint.neighborPort << "\n"
+                << "Socket: "  << toPrint.socket << "\n"
+                << "BuyType: " << toPrint.buyType << "\n"
+                << "Behavior: " << toPrint.behavior << "\n"
+                << "Seller Out: " << toPrint.sellerOut << "\n"
+                << "Type: " << toPrint.type << "\n"
+                << "Fish/Boar/Ducks: " << toPrint.numFish << "/" << toPrint.numBoar << "/" << toPrint.numDuck
+                << "\n--------------------------------------\n";
+
+
+}
 
 
 // This is the code for a buyer
