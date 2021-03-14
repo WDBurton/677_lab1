@@ -140,7 +140,7 @@ void printPeerDesc(struct peer toPrint);
 
 
 // Behavior constants
-#define BEHAVE_NULL 0
+#define BEHAVE_NULL 0           // No special behavior; just deal with it as one would a normal peer.
 #define BEHAVE_M1_SELL_FISH 1
 #define BEHAVE_M1_BUY_FISH 2
 #define BEHAVE_M1_SELL_BOAR 3

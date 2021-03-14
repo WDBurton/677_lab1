@@ -50,7 +50,17 @@ int makePeer(struct peer *peerDesc){
     peerDesc->socket = peer_fd;
 
     // We should now have a basic socket.  Now, we send them off to their appropiate behavior.
-    if( peerDesc->behavior == BEHAVE_M1_BUY_FISH ) {
+    if( peerDesc->behavior == BEHAVE_NULL ){
+        // This is a general purpose portion, thus why it's right on top.
+        // If we're buying stuff, then it will spin off a thread for a delayed seller seek and
+        // detatch it.  And regardless, it shall start a peerListen for the peer.
+        if(peerDesc->buyType != NONE){
+            std::thread t1(delayedSellerSeek, *peerDesc);
+            t1.detach();
+        }
+        peerListen(peerDesc, address);
+    }
+    else if( peerDesc->behavior == BEHAVE_M1_BUY_FISH ) {
         // This is very similar to normal behavior.  Just set it off to go.
         std::thread t1(delayedSellerSeek, *peerDesc);
         t1.detach();
