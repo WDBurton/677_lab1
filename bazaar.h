@@ -9,6 +9,8 @@ struct peer{
     int type;           // The type of peer, whether buyer, seller, or both
     int port;           // The port of the peer, for binding
     int neighborPort;   // The port of the neighbor, will be replaced when having more than 1 neighbor
+    int *neighbors;     // A variable-length array of neighbors; shall be constructed and kept in outtermost function.
+    int numNeighbors;    // The number of neighbors.
     int numFish;        // The number of fish available to sell
     int numBoar;        // '             boar                  '
     int numDuck;        // '             duck                  '

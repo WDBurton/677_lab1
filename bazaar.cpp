@@ -597,8 +597,12 @@ void printPeerDesc( struct peer toPrint ){
                 << "Behavior: " << toPrint.behavior << "\n"
                 << "Seller Out: " << toPrint.sellerOut << "\n"
                 << "Type: " << toPrint.type << "\n"
-                << "Fish/Boar/Ducks: " << toPrint.numFish << "/" << toPrint.numBoar << "/" << toPrint.numDuck
-                << "\n--------------------------------------\n";
+                << "Fish/Boar/Ducks: " << toPrint.numFish << "/" << toPrint.numBoar << "/" << toPrint.numDuck << "\n";
+    for( int i = 0; i < toPrint.numNeighbors; i++ ){
+        std::cout << "Neighbor " << i+1 << ": " << toPrint.neighbors[i] << "\n";
+    }
+
+    std::cout << "\n--------------------------------------\n";
 
 
 }
