@@ -51,17 +51,31 @@ int makePeer(struct peer *peerDesc){
 
     // We should now have a basic socket.  Now, we send them off to their appropiate behavior.
     if( peerDesc->behavior == BEHAVE_M1_BUY_FISH ) {
-        peerDesc->buyType = FISH;
+        // This is very similar to normal behavior.  Just set it off to go.
         std::thread t1(delayedSellerSeek, *peerDesc);
         t1.detach();
         peerListen(peerDesc, address);
-        //mOne_buyFish(peerDesc, address, peer_fd);
     }
     else if ( peerDesc->behavior == BEHAVE_M1_SELL_FISH ){
-        peerDesc->numFish = 1;
-        peerDesc->buyType = NONE;
+        // This is very similar to normal behavior.  Just set up a listen, nothing else.
         peerListen(peerDesc, address);
-        //mOne_sellFish(peerDesc, address, peer_fd);
+    }
+    else if(peerDesc->behavior == BEHAVE_M1_NO_BUY_BOAR){
+        // Though it does technically set up a listen, the listen will never recieve anything.
+        // It also goes through m1_noBuyBoar; Which does 'seeks' every five seconds.
+        // Thus a fork, to keep it all attached, so that when I kill the function it all dies.
+        
+        std::thread t1(peerListen, peerDesc, address);
+        while(true){
+            sleep(5);
+            address.sin_port = htons(peerDesc->neighborPort);
+            sellerSeek(*peerDesc, address);
+        }
+        t1.join();
+        
+    }
+    else if(peerDesc->behavior == BEHAVE_M1_SELL_BOAR){
+        peerListen(peerDesc, address);
     }
     else if( peerDesc->behavior == BEHAVE_TEST_X1 ){
 
@@ -185,7 +199,7 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
     bool thisDebugMax = false;
     if(peerDesc->showWork) sleep(1);
     if(thisDebugMax || debugThis) std::cout << "REC: START\n";
-    if(peerDesc->showWork) std::cout << "REC: PEER " << peerDesc->ID << "\n";
+    if(peerDesc->showWork) std::cout << "REC: PEER sender ID: " << peerDesc->ID << "\n";
     if(thisDebugMax) printPeerDesc(*peerDesc);
 
     // This is basically just a massive switch statement.
@@ -207,30 +221,35 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
             }
             break;
         case MESSAGE_SELLER_FOUND:          // The case for seller found message
-            if(debugThis) std::cout << "REC:  Message received: Seller Found\n";
+            if(debugThis) std::cout << "REC: Message received: Seller Found\n";
             buy(*peerDesc);
             //sellerSeek(*peerDesc, address);
             break;
         case MESSAGE_SELLER_SEEK:           // The case for seller seek message
             // If the peer has a good to sell, then it responds with seller found.
             // Otherwise, it sends the message to all of its neighbors.
-            if (debugThis) std::cout << "REC:  Message received: Seller Seek\n";
+            if (debugThis) std::cout << "REC: Message received: Seller Seek\n";
             if( 
                 (toRespond.message.sellerSeek.goodType == FISH && peerDesc->numFish > 0) ||
                 (toRespond.message.sellerSeek.goodType == BOAR && peerDesc->numBoar > 0) ||
                 (toRespond.message.sellerSeek.goodType == DUCK && peerDesc->numDuck > 0)
             ){
                 // It wants a good we have!  Time to send it back!
-                if (debugThis) std::cout << "REC:  Starting sellerFound\n";
+                if (debugThis) std::cout << "REC: Starting sellerFound\n";
                 sellerFound(*peerDesc, toRespond, address);
             } else{
-                std::cout << "Number of fish: " << peerDesc->numFish << "\n";
-                std::cout << "TODO: Seller seek else statement in peerReceive\n";
+                // If we get here, first, we need to confirm that it's not on its last hop.
+                // If it is, well, too bad, so sad, no go.
+                if(toRespond.message.sellerSeek.hopNum > 0){
+                    if (debugThis) std::cout << "REC: SellerSeek message to be continued\n";
+                    contSellerSeek(*peerDesc, toRespond);
+                }else{
+                    if(debugThis) std::cout << "REC: SellerSeek message out of hops, do nothing\n";
+                }
             }
             break;
         default:
-            std::cout << "---------------------------------\n"
-                      << "ERROR: UNKNOWN MESSAGE TYPE\n";
+            std::cout << "ERROR: UNKNOWN MESSAGE TYPE\n";
     }
     if(peerDesc->showWork) std::cout << "\n---------------------\n\n";
 }
@@ -288,7 +307,7 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
     toSend.type = MESSAGE_SELLER_SEEK;
     toSend.message.sellerSeek.buyerID = peerDesc.ID;
     toSend.message.sellerSeek.goodType = peerDesc.buyType;
-    toSend.message.sellerSeek.hopNum = 1;                       // TODO: Make this a variable that can be assigned at very start.
+    toSend.message.sellerSeek.hopNum = 0;                       // TODO: Make this a variable that can be assigned at very start.
     toSend.message.sellerSeek.prevHops[0] = peerDesc.ID;
 
     if(thisDebug) std::cout << "SELLERSEEK good type: " << toSend.message.sellerSeek.goodType << "\n"
@@ -305,6 +324,11 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
 
     // Send the message!
     sendMessage( toSend, neighbor );
+}
+
+// The 'contSellerSeek' function.  Spreads out a sellerSeek message across its neighbors.
+int contSellerSeek(struct peer peerDesc, struct bazaarMessage seekerMessage){
+    std::cout << "TODO: CONT. SELLER-SEEK\n";
 }
 
 
@@ -506,6 +530,20 @@ void delayedSellerSeek( struct peer peerDesc ){
     struct sockaddr_in address;
     sellerSeek(peerDesc, address);
 }
+
+
+/***********************************************************************************/
+// Milestone specific functions
+void m1_noBuyBoar(struct peer peerDesc){
+    // This will simply send out a seller_seek every five seconds.
+    struct sockaddr_in address;
+    while(true){
+        sleep(5);
+        sellerSeek(peerDesc, address);
+    }
+}
+
+
 
 /***********************************************************************************/
 // Testing functions

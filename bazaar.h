@@ -68,6 +68,8 @@ int mOne_sellFish( struct peer peerDesc, struct sockaddr_in address, int peerSoc
 int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSocket );
 void delayedSellerSeek( struct peer peerDesc );
 
+void m1_noBuyBoar( struct peer peerDesc );
+
 /*****************************************************************************************************/
 // Proper functions, used for the others
 
@@ -86,6 +88,9 @@ int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr );
 
 // Sends out a sellerSeek call.
 int sellerSeek(struct peer peerDesc, struct sockaddr_in address);
+
+// A continuation of sellerSeek -- called if the reciever is not a buyer, and if message was not on last hop.
+int contSellerSeek(struct peer peerDesc, struct bazaarMessage seekerMessage);
 
 // Sends out a sellerFound call.
 int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct sockaddr_in address);
