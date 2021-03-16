@@ -280,6 +280,8 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
 int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr ){
     bool debugThis = false;
     bool debugThisMax = false;
+    //ignore
+    //ignore
     
     // Creates the socket
     int sendSocket = socket(AF_INET, SOCK_STREAM, 0);
