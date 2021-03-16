@@ -235,7 +235,13 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
             break;
         case MESSAGE_SELLER_FOUND:          // The case for seller found message
             if(debugThis) std::cout << "REC: Message received: Seller Found\n";
-            buy(*peerDesc);
+            // First off, check to confirm that we have the right peer.
+            if(peerDesc->ID == toRespond.message.sellerFound.buyerID){
+                peerDesc->sellerID = toRespond.message.sellerFound.sellerID;    // Saves the seller ID.
+                buy(*peerDesc);
+            } else {
+                contSellerFound(*peerDesc, toRespond);
+            }
             //sellerSeek(*peerDesc, address);
             break;
         case MESSAGE_SELLER_SEEK:           // The case for seller seek message

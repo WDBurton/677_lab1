@@ -16,6 +16,7 @@ struct peer{
     int numDuck;        // '             duck                  '
     int buyType;        // The type of good currently wanted for purchase
     int behavior;       // The behavior, if specified, for testing purposes.  Otherwise it will be 0.
+    int sellerID;
     bool sellerOut;     // Lets the peer know if the seller that they're buying from is out of product.
     bool showWork;      // Lets the code know to work slow, and to show every step of it.
 };
