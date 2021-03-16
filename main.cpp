@@ -102,11 +102,56 @@ void milestoneOne_3(){
 
 }
 
+
+void test_2(){
+    struct peer peerBase;
+    peerBase.numBoar = 0;
+    peerBase.numFish = 0;
+    peerBase.numDuck = 0;
+    peerBase.neighborPort = -1;
+    peerBase.showWork = true;
+    peerBase.buyType = NONE;
+    peerBase.behavior = BEHAVE_NULL;
+
+    // For purposes of testing, each peer has at most 2 neighbors.
+    peerBase.numNeighbors = 1;
+
+    struct peer peer1, peer2;
+    peer1 = peerBase;
+    peer2 = peerBase;
+
+    peerBase.ID = 0;
+    peerBase.buyType = BOAR;
+    int n0[1] = {2};
+    peerBase.neighbors = n0;
+
+    /*peer1.ID = 1;
+    int n1[2] = {0,2};
+    peer1.neighbors = n1;
+    peer1.numNeighbors = 2;*/
+
+    peer2.ID = 2;
+    int n2[1] = {1};
+    peer2.neighbors = n2;
+    peer2.numBoar = 5;
+
+    std::thread t0(makePeer, &peerBase);
+    //std::thread t1(makePeer, &peer1);
+    std::thread t2(makePeer, &peer2);
+
+    
+    t0.join();
+    //t1.join();
+    t2.join();
+
+}
+
 int main(){
 
     //milestoneOne_1();
     //milestoneOne_2();
     milestoneOne_3();
+    //test_2();
 
     //testMultiCompile();
 }
