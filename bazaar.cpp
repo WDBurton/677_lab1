@@ -330,13 +330,20 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
     // TODO: This will be a for loop over all neighbors.
 
     // Make the neighbor address
-    struct sockaddr_in neighbor;
-    //neighbor.sin_family = AF_INET;
-	//neighbor.sin_addr.s_addr = INADDR_ANY; 
-    neighbor.sin_port = htons(peerDesc.neighborPort);  //TODO: Currently, this relies on there being only one neighbor.  Fix that.
-
-    // Send the message!
-    sendMessage( toSend, neighbor );
+    struct sockaddr_in curNeighbor;
+    if(peerDesc.neighborPort == -1){
+        if(thisDebug) std::cout << "S_SEEK: Start sending\n";
+        // If using proper implementation, then send it out to all neighbors.
+        for(int i = 0; i < peerDesc.numNeighbors; i ++){
+            if(thisDebug) std::cout << "S_SEEK:  To neighbor " << i << ", ID: " << peerDesc.neighbors[i] << "\n";
+            curNeighbor.sin_port = htons(8080+peerDesc.neighbors[i]);
+            sendMessage(toSend, curNeighbor);        
+        }
+    } else{
+        // Otherwise use old implemention.
+        curNeighbor.sin_port = htons(peerDesc.neighborPort);
+        sendMessage(toSend, curNeighbor);
+    }
 }
 
 // The 'contSellerSeek' function.  Spreads out a sellerSeek message across its neighbors.
