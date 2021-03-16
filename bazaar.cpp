@@ -323,8 +323,8 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
     toSend.message.sellerSeek.hopNum = 0;                       // TODO: Make this a variable that can be assigned at very start.
     toSend.message.sellerSeek.prevHops[0] = peerDesc.ID;
 
-    if(thisDebug) std::cout << "SELLERSEEK good type: " << toSend.message.sellerSeek.goodType << "\n"
-                            << "To port: " << peerDesc.neighborPort <<"\n";
+    //if(thisDebug) std::cout << "SELLERSEEK good type: " << toSend.message.sellerSeek.goodType << "\n"
+    //                        << "To port: " << peerDesc.neighborPort <<"\n";
 
     // Now we need to actually make the connection to all of the neighbors, and send the message out.
     // TODO: This will be a for loop over all neighbors.
