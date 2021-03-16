@@ -348,7 +348,29 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
 
 // The 'contSellerSeek' function.  Spreads out a sellerSeek message across its neighbors.
 int contSellerSeek(struct peer peerDesc, struct bazaarMessage seekerMessage){
-    std::cout << "TODO: CONT. SELLER-SEEK\n";
+    //std::cout << "TODO: CONT. SELLER-SEEK\n";
+
+    // First, adust the seeker message.
+    seekerMessage.message.sellerSeek.hopNum --;
+
+    //For all neighbors, check to see if it's not been sent to in the past -- if it has, don't send it.
+    bool found = false;
+    struct sockaddr_in neighbor;
+    for(int i = 0; i < peerDesc.numNeighbors; i ++){
+        for(int j = 0; j < MAX_HOPS; j ++ ){
+            if(seekerMessage.message.sellerSeek.prevHops[j] == peerDesc.neighbors[i]){
+                found = true;
+            }
+        }
+        // Now we know if we've found it, if we haven't...
+        if( !found ){
+            neighbor.sin_port = htons(8080+peerDesc.neighbors[i]);
+            seekerMessage.message.sellerSeek.prevHops[seekerMessage.message.sellerSeek.hopNum] = peerDesc.neighbors[i];
+            sendMessage(seekerMessage, neighbor);
+        }
+        // Either way, reset bool.
+        found = false;
+    }
 }
 
 int contSellerFound(struct peer peerDesc, struct bazaarMessage foundMessage){

@@ -21,7 +21,7 @@ struct peer{
 };
 
 
-#define MAX_HOPS = 10
+#define MAX_HOPS 10
 
 // The 'message' structure, used for messages between peers in the bazaar.  A basic struct/union/struct.
 struct bazaarMessage{
@@ -93,6 +93,8 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address);
 
 // A continuation of sellerSeek -- called if the reciever is not a buyer, and if message was not on last hop.
 int contSellerSeek(struct peer peerDesc, struct bazaarMessage seekerMessage);
+
+int contSellerFound(struct peer peerDesc, struct bazaarMessage foundMessage){
 
 // Sends out a sellerFound call.
 int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct sockaddr_in address);
