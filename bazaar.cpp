@@ -230,6 +230,7 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
             }else{      
                 // If buyTotal was 0, wait one second, and send out a message for a new seller!
                 if(debugThis) std::cout << "REC: The seller ran out of goods; starting sellerSeek\n";
+                peerDesc->sellerID = -1;
                 sellerSeek(*peerDesc, address);          
             }
             break;
