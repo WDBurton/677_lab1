@@ -39,6 +39,9 @@ int makePeer(struct peer *peerDesc){
     // Modify address for port attachment
 	address.sin_family = AF_INET; 
 	address.sin_addr.s_addr = INADDR_ANY; 
+    if(peerDesc->neighborPort == -1){
+        peerDesc->port = 8080+peerDesc->ID;
+    }
 	address.sin_port = htons(peerDesc->port);
     // ATTACH THE PORT!
     if( bind( peer_fd, (struct sockaddr *)&address, sizeof(address) ) < 0 ){
@@ -138,7 +141,7 @@ int makePeer(struct peer *peerDesc){
 // The 'peerListen' function.  Listens to the socket in an infinite loop, and creates a detatched thread to
 // deal with whtever message it recieves.
 int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
-    bool debugThis = false;
+    bool debugThis = true;
     int sizeRead = 0;
     int tempSocket = 0;
     //struct bazaarMessage toRead;
@@ -184,7 +187,7 @@ int peerListen( struct peer *peerDesc, struct sockaddr_in address ){
         close(tempSocket);
 
         if( debugThis ) std::cout << "PEERLISTEN:  Peer " << peerDesc->ID << " has read "
-                                    << sizeRead << " Bytes, processing...\n";
+                                    << sizeRead << " | " << sizeof(toRead) << " Bytes, processing...\n";
 
         //... And then spin off the thread, detatch it, close the socket, and restart.
         std::thread t(peerReceive, peerDesc, address, toRead);
@@ -205,9 +208,9 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
     // if the user wants to see, and it can slow it down for demonstration purposes.
 
     // An initial set of debug variables and printing.
-    bool debugThis = false || peerDesc->showWork;
-    bool thisDebugMax = false;
-    if(peerDesc->showWork) sleep(1);
+    bool debugThis = true || peerDesc->showWork;
+    bool thisDebugMax = true;
+    //if(peerDesc->showWork) sleep(1);
     if(thisDebugMax || debugThis) std::cout << "REC: START\n";
     if(peerDesc->showWork) std::cout << "REC: PEER sender ID: " << peerDesc->ID << "\n";
     if(thisDebugMax) printPeerDesc(*peerDesc);
@@ -227,12 +230,19 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
             }else{      
                 // If buyTotal was 0, wait one second, and send out a message for a new seller!
                 if(debugThis) std::cout << "REC: The seller ran out of goods; starting sellerSeek\n";
+                peerDesc->sellerID = -1;    // Removes the seller ID.
                 sellerSeek(*peerDesc, address);          
             }
             break;
         case MESSAGE_SELLER_FOUND:          // The case for seller found message
             if(debugThis) std::cout << "REC: Message received: Seller Found\n";
-            buy(*peerDesc);
+            // First off, check to confirm that we have the right peer.
+            if(peerDesc->ID == toRespond.message.sellerFound.buyerID){
+                peerDesc->sellerID = toRespond.message.sellerFound.sellerID;    // Saves the seller ID.
+                buy(*peerDesc);
+            } else {
+                contSellerFound(*peerDesc, toRespond);
+            }
             //sellerSeek(*peerDesc, address);
             break;
         case MESSAGE_SELLER_SEEK:           // The case for seller seek message
@@ -268,8 +278,10 @@ int peerReceive( struct peer *peerDesc, struct sockaddr_in address, struct bazaa
 
 // The 'sendMessage' function.  Sends out a bazaar message; creates the socket and sends it out.
 int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr ){
-    bool debugThis = false;
-    bool debugThisMax = false;
+    bool debugThis = true;
+    bool debugThisMax = true;
+    std::cout << "Size of message: " << sizeof(toSend) << "\n";
+    printBazaarMessage(toSend);
     
     // Creates the socket
     int sendSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -308,7 +320,7 @@ int sendMessage(struct bazaarMessage toSend, struct sockaddr_in targetAddr ){
 
 // The 'sellerSeek' function.  Sends out a sellerSeek message.
 int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
-    bool thisDebug = false;      // A simple debug variable used in functions that are not working for some reason.
+    bool thisDebug = true;      // A simple debug variable used in functions that are not working for some reason.
 
     // This simply creates a message, and sends it out to all neighbors.
     // The buyerID and first prevHops are both the peer's ID, with the goodType being what the peer
@@ -317,28 +329,60 @@ int sellerSeek(struct peer peerDesc, struct sockaddr_in address){
     toSend.type = MESSAGE_SELLER_SEEK;
     toSend.message.sellerSeek.buyerID = peerDesc.ID;
     toSend.message.sellerSeek.goodType = peerDesc.buyType;
-    toSend.message.sellerSeek.hopNum = 0;                       // TODO: Make this a variable that can be assigned at very start.
-    toSend.message.sellerSeek.prevHops[0] = peerDesc.ID;
+    toSend.message.sellerSeek.hopNum = 10;                       // TODO: Make this a variable that can be assigned at very start.
+    toSend.message.sellerSeek.prevHops[10] = peerDesc.ID;
 
-    if(thisDebug) std::cout << "SELLERSEEK good type: " << toSend.message.sellerSeek.goodType << "\n"
-                            << "To port: " << peerDesc.neighborPort <<"\n";
+    //if(thisDebug) std::cout << "SELLERSEEK good type: " << toSend.message.sellerSeek.goodType << "\n"
+    //                        << "To port: " << peerDesc.neighborPort <<"\n";
 
     // Now we need to actually make the connection to all of the neighbors, and send the message out.
     // TODO: This will be a for loop over all neighbors.
 
-    // Make the neighbor address
-    struct sockaddr_in neighbor;
-    //neighbor.sin_family = AF_INET;
-	//neighbor.sin_addr.s_addr = INADDR_ANY; 
-    neighbor.sin_port = htons(peerDesc.neighborPort);  //TODO: Currently, this relies on there being only one neighbor.  Fix that.
-
-    // Send the message!
-    sendMessage( toSend, neighbor );
+    struct sockaddr_in curNeighbor;
+    if(peerDesc.neighborPort == -1){
+        // If using proper implementation, then send it out to all neighbors.
+        for(int i = 0; i < peerDesc.numNeighbors; i ++){
+            if(thisDebug) std::cout << "S_SEEK:  To neighbor " << i << ", ID: " << peerDesc.neighbors[i] << "\n";
+            curNeighbor.sin_port = htons(8080+peerDesc.neighbors[i]);
+            sendMessage(toSend, curNeighbor);        
+        }
+    } else{
+        // Otherwise use old implemention.
+        curNeighbor.sin_port = htons(peerDesc.neighborPort);
+        sendMessage(toSend, curNeighbor);
+    }
 }
 
 // The 'contSellerSeek' function.  Spreads out a sellerSeek message across its neighbors.
 int contSellerSeek(struct peer peerDesc, struct bazaarMessage seekerMessage){
-    std::cout << "TODO: CONT. SELLER-SEEK\n";
+    //std::cout << "TODO: CONT. SELLER-SEEK\n";
+
+    // First, adust the seeker message.
+    seekerMessage.message.sellerSeek.hopNum --;
+
+    //For all neighbors, check to see if it's not been sent to in the past -- if it has, don't send it.
+    bool found = false;
+    struct sockaddr_in neighbor;
+    for(int i = 0; i < peerDesc.numNeighbors; i ++){
+        for(int j = 0; j < MAX_HOPS; j ++ ){
+            if(seekerMessage.message.sellerSeek.prevHops[j] == peerDesc.neighbors[i]){
+                found = true;
+            }
+        }
+        // Now we know if we've found it, if we haven't...
+        if( !found ){
+            neighbor.sin_port = htons(8080+peerDesc.neighbors[i]);
+            seekerMessage.message.sellerSeek.prevHops[seekerMessage.message.sellerSeek.hopNum] = peerDesc.neighbors[i];
+            sendMessage(seekerMessage, neighbor);
+        }
+        // Either way, reset bool.
+        found = false;
+    }
+}
+
+int contSellerFound(struct peer peerDesc, struct bazaarMessage foundMessage){
+    // Decrement the foundMessage.hopNum by 1, use the new ID for the port num, and then send off to 'send'.
+    std::cout << "???\n";
 }
 
 
@@ -352,16 +396,18 @@ int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct
     toSend.message.sellerFound.buyerID = seekerMessage.message.sellerSeek.buyerID;
     toSend.message.sellerFound.sellerID = peerDesc.ID;
 
-    // For the neighbors, I need to copy them over iteratively.
-    /*for( int i = 0; i < MAX_NEIGHBORS; i++ ){
+    // For the hops, I need to copy them over iteratively.
+    for( int i = 0; i < MAX_HOPS; i++ ){
         toSend.message.sellerFound.prevHops[i] = seekerMessage.message.sellerSeek.prevHops[i];
-    }*/
+    }
 
     // Now that we have the message, it's time to send it out.  We need to make the address.
     struct sockaddr_in neighbor;
-    //neighbor.sin_family = AF_INET;
-	//address.sin_addr.s_addr = INADDR_ANY;
-    neighbor.sin_port = htons(peerDesc.neighborPort);  // TODO:  Fix for more than one neighbor.
+    if(peerDesc.neighborPort == -1){
+        neighbor.sin_port = htons(seekerMessage.message.sellerSeek.prevHops[seekerMessage.message.sellerSeek.hopNum]);
+    } else{
+        neighbor.sin_port = htons(peerDesc.neighborPort);
+    }
 
     sendMessage( toSend, neighbor );
 }
@@ -536,7 +582,7 @@ int mOne_buyFish( struct peer peerDesc, struct sockaddr_in address, int peerSock
 }
 
 void delayedSellerSeek( struct peer peerDesc ){
-    sleep(2);
+    sleep(3);
     struct sockaddr_in address;
     sellerSeek(peerDesc, address);
 }
