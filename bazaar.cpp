@@ -39,6 +39,9 @@ int makePeer(struct peer *peerDesc){
     // Modify address for port attachment
 	address.sin_family = AF_INET; 
 	address.sin_addr.s_addr = INADDR_ANY; 
+    if(peerDesc->neighborPort == -1){
+        peerDesc->port = 8080+peerDesc->ID;
+    }
 	address.sin_port = htons(peerDesc->port);
     // ATTACH THE PORT!
     if( bind( peer_fd, (struct sockaddr *)&address, sizeof(address) ) < 0 ){
