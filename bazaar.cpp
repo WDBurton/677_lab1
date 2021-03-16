@@ -351,6 +351,11 @@ int contSellerSeek(struct peer peerDesc, struct bazaarMessage seekerMessage){
     std::cout << "TODO: CONT. SELLER-SEEK\n";
 }
 
+int contSellerFound(struct peer peerDesc, struct bazaarMessage foundMessage){
+    // Decrement the foundMessage.hopNum by 1, use the new ID for the port num, and then send off to 'send'.
+    std::cout << "???\n";
+}
+
 
 // The 'sellerFound' function.  Sends out a sellerFound message.
 int sellerFound(struct peer peerDesc, struct bazaarMessage seekerMessage, struct sockaddr_in address){
